@@ -36,7 +36,7 @@ ini_set('display_errors', 1);
         <!-- Header -->
         <div class="flex items-center justify-between border-b py-6">
           <!-- Left: Title -->
-          <h2 class="text-xl font-semibold text-gray-800" id="main-content-title">Dashboard</h2>
+          <h2 class="text-xl font-semibold text-gray-800" id="main-content-title">ano ano</h2>
 <?php include __DIR__ . '/profile.php'; ?>
 
         </div>
