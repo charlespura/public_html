@@ -74,59 +74,63 @@ while($row = $res->fetch_assoc()) {
     $schedules[$row['employee_id']][$row['work_date']] = $row['shift_id'];
 }
 ?>
+<div class="bg-white shadow-md rounded-2xl p-4 sm:p-6 w-full mx-auto mt-6 mb-10 overflow-x-auto">
+    <h2 class="text-2xl font-bold mb-4 sm:mb-6">Weekly Shift Scheduler</h2>
 
-<div class="bg-white shadow-md rounded-2xl p-6 w-full mx-auto mt-10 mb-10">
-    <h2 class="text-2xl font-bold mb-6">Weekly Shift Scheduler</h2>
+    <!-- Responsive scrollable grid -->
+    <div class="min-w-max">
+        <div class="grid grid-cols-1 sm:grid-cols-8 gap-2 items-center">
+            <!-- Header: Employee + Days -->
+            <div class="font-bold p-2 bg-gray-100 border">Employee</div>
+            <?php
+            $days = [];
+            for($i=0;$i<7;$i++){
+                $day = date('D M d', strtotime("{$week_start} +{$i} days"));
+                $days[] = date('Y-m-d', strtotime("{$week_start} +{$i} days"));
+                echo "<div class='font-bold text-center p-2 bg-gray-100 border'>$day</div>";
+            }
+            ?>
 
-    <div class="grid grid-cols-8 gap-2">
-        <div class="font-bold">Employee</div>
-        <?php
-        $days = [];
-        for($i=0;$i<7;$i++){
-            $day = date('D M d', strtotime("{$week_start} +{$i} days"));
-            $days[] = date('Y-m-d', strtotime("{$week_start} +{$i} days"));
-            echo "<div class='font-bold text-center'>$day</div>";
-        }
-        ?>
+            <!-- Employee rows -->
+            <?php while($emp = $employees->fetch_assoc()): ?>
+                <div class="font-medium p-2 border bg-gray-50"><?php echo htmlspecialchars($emp['fullname']); ?></div>
+                <?php foreach($days as $day): ?>
+                    <div class="border rounded p-1 min-h-[50px] bg-gray-50 flex flex-col items-center justify-center"
+                         data-employee="<?php echo $emp['employee_id']; ?>"
+                         data-date="<?php echo $day; ?>"
+                         ondragover="allowDrop(event)" ondrop="dropShift(event)">
+                        <?php 
+                        $shiftId = $schedules[$emp['employee_id']][$day] ?? null;
 
-        <?php while($emp = $employees->fetch_assoc()): ?>
-            <div class="font-medium py-2"><?php echo htmlspecialchars($emp['fullname']); ?></div>
-            <?php foreach($days as $day): ?>
-                <div class="border rounded p-1 min-h-[50px] bg-gray-50 flex flex-col items-center justify-center"
-                     data-employee="<?php echo $emp['employee_id']; ?>"
-                     data-date="<?php echo $day; ?>"
-                     ondragover="allowDrop(event)" ondrop="dropShift(event)">
-                    <?php 
-                    // Default to Off if no schedule exists
-                    $shiftId = $schedules[$emp['employee_id']][$day] ?? null;
-
-                    if ($shiftId) {
-                        $shift = $shiftConn->query("SELECT name, shift_code FROM shifts WHERE shift_id='$shiftId'")->fetch_assoc();
-                        echo "<div class='bg-blue-400 text-white px-2 py-1 rounded mb-1 cursor-move' draggable='true' ondragstart='dragShift(event)' data-shiftid='$shiftId'>{$shift['shift_code']} - {$shift['name']}</div>";
-                    } else {
-                        echo "<div class='bg-gray-400 text-white px-2 py-1 rounded mb-1 cursor-move' draggable='true' ondragstart='dragShift(event)' data-shiftid=''>Off</div>";
-                    }
-                    ?>
-                </div>
-            <?php endforeach; ?>
-        <?php endwhile; ?>
+                        if ($shiftId) {
+                            $shift = $shiftConn->query("SELECT name, shift_code FROM shifts WHERE shift_id='$shiftId'")->fetch_assoc();
+                            echo "<div class='bg-blue-400 text-white px-2 py-1 rounded mb-1 cursor-move' draggable='true' ondragstart='dragShift(event)' data-shiftid='$shiftId'>{$shift['shift_code']} - {$shift['name']}</div>";
+                        } else {
+                            echo "<div class='bg-gray-400 text-white px-2 py-1 rounded mb-1 cursor-default'>Off</div>";
+                        }
+                        ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php endwhile; ?>
+        </div>
     </div>
 
+    <!-- Available Shifts -->
     <h3 class="mt-6 font-bold">Available Shifts (Drag to Assign)</h3>
-    <div class="flex gap-2 mt-2">
+    <div class="flex gap-2 mt-2 overflow-x-auto py-2">
         <?php
         $shifts->data_seek(0);
         while($s = $shifts->fetch_assoc()): ?>
-            <div class="bg-green-500 text-white px-3 py-1 rounded cursor-move" 
+            <div class="bg-green-500 text-white px-3 py-1 rounded cursor-move whitespace-nowrap" 
                  draggable="true" 
                  ondragstart="dragShift(event)"
                  data-shiftid="<?php echo $s['shift_id']; ?>">
                 <?php echo $s['shift_code'] . " - " . $s['name']; ?>
             </div>
         <?php endwhile; ?>
-      
+
         <!-- Remove Shift -->
-        <div class="bg-red-500 text-white px-3 py-1 rounded cursor-move"
+        <div class="bg-red-500 text-white px-3 py-1 rounded cursor-move whitespace-nowrap"
              draggable="true"
              ondragstart="dragShift(event)"
              data-shiftid="REMOVE">
