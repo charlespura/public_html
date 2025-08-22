@@ -62,8 +62,7 @@ ini_set('display_errors', 1);
   
 <?php
 // Include the database connection file
-include 'dbconnection/dbEmployee.php';
-
+include __DIR__ .'/../dbconnection/dbEmployee.php';
 
 // Pagination setup
 $limit = 20; // number of employees per page
