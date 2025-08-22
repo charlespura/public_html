@@ -57,7 +57,7 @@ include 'shiftnavbar.php';
 
 <?php
 // Include shift DB connection
-include __DIR__ . '/../../dbconnection/dbShift.php';
+include __DIR__ . '/../dbconnection/dbShift.php';
 $shiftConn = $conn; // Shift DB connection
 
 // Handle form submission

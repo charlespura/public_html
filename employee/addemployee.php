@@ -57,13 +57,12 @@ ini_set('display_errors', 1);
 
       
 <div class="bg-white shadow-md rounded-2xl p-10 w-full mx-auto mt-10 mb-10">
+
+
+
 <?php
-// Database connection (XAMPP)
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "hr3_system";
-$conn = new mysqli($host, $user, $pass, $db);
+// Include the database connection file
+include 'dbconnection/dbEmployee.php';
 
 if ($conn->connect_error) {
     die("Database connection failed: " . $conn->connect_error);
