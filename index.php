@@ -4,6 +4,18 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
 
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+session_start(); // Start the session
+
+// Check if user is authenticated
+if (!isset($_SESSION['user_id'])) {
+    // If not authenticated, redirect to Facebook
+    header('Location: https://www.facebook.com');
+    exit();
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">

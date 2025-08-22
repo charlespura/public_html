@@ -45,146 +45,171 @@ ini_set('display_errors', 1);
         </div>
 <!-- Second Header: Submodules -->
 
-
 <?php 
-include 'shiftnavbar.php'; ?>
+include 'shiftnavbar.php'; 
 
-
-
-<div class="bg-white shadow-md rounded-2xl p-10 w-full mx-auto mt-10 mb-10">
-    <h2 class="text-2xl font-bold mb-6">Assign Shift to Employee</h2>
-<?php
-// Include employee DB connection
+// Include DB connections
 include __DIR__ . '/../dbconnection/dbEmployee.php';
-$empConn = $conn; // rename the included $conn to $empConn
-
-// Include shift DB connection
+$empConn = $conn;
 include __DIR__ . '/../dbconnection/dbShift.php';
-$shiftConn = $conn; // rename the included $conn to $shiftConn
-?>
+$shiftConn = $conn;
 
-<?php
-include __DIR__ . '/../dbconnection/dbEmployee.php'; // $empConn
-include __DIR__ . '/../dbconnection/dbShift.php';    // $shiftConn
+// Fetch employees
+$employees = $empConn->query("SELECT employee_id, CONCAT(first_name,' ',last_name) AS fullname 
+                              FROM employees ORDER BY first_name");
 
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $employee_id = $_POST['employee_id'] ?? '';
-    $shift_id    = $_POST['shift_id'] ?? '';
-    $work_date   = $_POST['work_date'] ?? '';
-    $notes       = $_POST['notes'] ?? '';
-
-    if ($employee_id && $shift_id && $work_date) {
-        $schedule_id = bin2hex(random_bytes(16)); // unique ID
-
-        $stmt = $shiftConn->prepare("INSERT INTO employee_schedules 
-            (schedule_id, employee_id, shift_id, work_date, notes) 
-            VALUES (?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE 
-                shift_id = VALUES(shift_id),
-                notes = VALUES(notes),
-                updated_at = NOW()");
-        $stmt->bind_param("sssss", $schedule_id, $employee_id, $shift_id, $work_date, $notes);
-
-        if ($stmt->execute()) {
-            echo '<div class="bg-green-100 text-green-700 p-3 mb-4 rounded">✅ Shift assigned successfully!</div>';
-        } else {
-            echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded">❌ Error: ' . htmlspecialchars($stmt->error) . '</div>';
-        }
-    } else {
-        echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded">⚠️ Please fill in all required fields.</div>';
-    }
-}
-
-// Fetch employees from Hr3_system
-$employees = $empConn->query("SELECT employee_id, CONCAT(first_name, ' ', last_name) AS fullname 
-                              FROM employees 
-                              ORDER BY first_name, last_name");
-
-// Fetch shifts from Hr3_shiftschedule
+// Fetch shifts
 $shifts = $shiftConn->query("SELECT shift_id, shift_code, name, start_time, end_time 
-                             FROM shifts 
-                             ORDER BY start_time");
+                             FROM shifts ORDER BY start_time");
+
+// Fetch existing schedules for the week
+$week_start = date('Y-m-d', strtotime('monday this week'));
+$week_end   = date('Y-m-d', strtotime('sunday this week'));
+
+$schedules = [];
+$res = $shiftConn->query("SELECT employee_id, shift_id, work_date 
+                          FROM employee_schedules 
+                          WHERE work_date BETWEEN '$week_start' AND '$week_end'");
+while($row = $res->fetch_assoc()) {
+    $schedules[$row['employee_id']][$row['work_date']] = $row['shift_id'];
+}
 ?>
 
-<form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-white shadow-md rounded-2xl p-6 w-full mx-auto mt-10 mb-10">
+    <h2 class="text-2xl font-bold mb-6">Weekly Shift Scheduler</h2>
 
-   <!-- Add TomSelect CSS & JS -->
-<link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    <div class="grid grid-cols-8 gap-2">
+        <div class="font-bold">Employee</div>
+        <?php
+        $days = [];
+        for($i=0;$i<7;$i++){
+            $day = date('D M d', strtotime("{$week_start} +{$i} days"));
+            $days[] = date('Y-m-d', strtotime("{$week_start} +{$i} days"));
+            echo "<div class='font-bold text-center'>$day</div>";
+        }
+        ?>
 
-<!-- Employee -->
-<div>
-    <label class="block mb-1 font-medium">Employee <span class="text-red-500">*</span></label>
-    <select id="employee_id" name="employee_id" required class="border rounded w-full p-2">
-        <option value="">--  Type  Employee Name --</option>
-        <?php while ($e = $employees->fetch_assoc()): ?>
-            <option value="<?php echo $e['employee_id']; ?>">
-                <?php echo htmlspecialchars($e['fullname']); ?>
-            </option>
+        <?php while($emp = $employees->fetch_assoc()): ?>
+            <div class="font-medium py-2"><?php echo htmlspecialchars($emp['fullname']); ?></div>
+            <?php foreach($days as $day): ?>
+                <div class="border rounded p-1 min-h-[50px] bg-gray-50 flex flex-col items-center justify-center"
+                     data-employee="<?php echo $emp['employee_id']; ?>"
+                     data-date="<?php echo $day; ?>"
+                     ondragover="allowDrop(event)" ondrop="dropShift(event)">
+                    <?php 
+                    // Default to Off if no schedule exists
+                    $shiftId = $schedules[$emp['employee_id']][$day] ?? null;
+
+                    if ($shiftId) {
+                        $shift = $shiftConn->query("SELECT name, shift_code FROM shifts WHERE shift_id='$shiftId'")->fetch_assoc();
+                        echo "<div class='bg-blue-400 text-white px-2 py-1 rounded mb-1 cursor-move' draggable='true' ondragstart='dragShift(event)' data-shiftid='$shiftId'>{$shift['shift_code']} - {$shift['name']}</div>";
+                    } else {
+                        echo "<div class='bg-gray-400 text-white px-2 py-1 rounded mb-1 cursor-move' draggable='true' ondragstart='dragShift(event)' data-shiftid=''>Off</div>";
+                    }
+                    ?>
+                </div>
+            <?php endforeach; ?>
         <?php endwhile; ?>
-    </select>
+    </div>
+
+    <h3 class="mt-6 font-bold">Available Shifts (Drag to Assign)</h3>
+    <div class="flex gap-2 mt-2">
+        <?php
+        $shifts->data_seek(0);
+        while($s = $shifts->fetch_assoc()): ?>
+            <div class="bg-green-500 text-white px-3 py-1 rounded cursor-move" 
+                 draggable="true" 
+                 ondragstart="dragShift(event)"
+                 data-shiftid="<?php echo $s['shift_id']; ?>">
+                <?php echo $s['shift_code'] . " - " . $s['name']; ?>
+            </div>
+        <?php endwhile; ?>
+        <!-- Off / No Shift -->
+        <div class="bg-gray-400 text-white px-3 py-1 rounded cursor-move"
+             draggable="true"
+             ondragstart="dragShift(event)"
+             data-shiftid="">
+            Off / No Shift
+        </div>
+        <!-- Remove Shift -->
+        <div class="bg-red-500 text-white px-3 py-1 rounded cursor-move"
+             draggable="true"
+             ondragstart="dragShift(event)"
+             data-shiftid="REMOVE">
+            Remove Shift
+        </div>
+    </div>
 </div>
 
 <script>
-new TomSelect("#employee_id", {
-    create: false,
-    sortField: {
-        field: "text",
-        direction: "asc"
-    },
-    placeholder: "Search employee..."
-});
+let draggedShiftId = null;
+let draggedShiftName = '';
+
+function dragShift(ev) {
+    draggedShiftId = ev.target.dataset.shiftid;
+    draggedShiftName = ev.target.innerText;
+}
+
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function dropShift(ev) {
+    ev.preventDefault();
+    const employeeId = ev.currentTarget.dataset.employee;
+    const workDate = ev.currentTarget.dataset.date;
+    if (!employeeId || !workDate) return;
+
+    let shiftIdToSend = draggedShiftId;
+    let displayText = draggedShiftName;
+
+    ev.currentTarget.innerHTML = ''; // clear first
+
+    if (draggedShiftId === 'REMOVE') {
+        shiftIdToSend = 'REMOVE';
+        displayText = '';
+        // nothing appended
+    } else if (!draggedShiftId) {
+        // Off
+        shiftIdToSend = null;
+        displayText = 'Off';
+        const div = document.createElement('div');
+        div.className = 'bg-gray-400 text-white px-2 py-1 rounded mb-1 cursor-move';
+        div.draggable = true;
+        div.dataset.shiftid = '';
+        div.innerText = displayText;
+        div.ondragstart = dragShift;
+        ev.currentTarget.appendChild(div);
+    } else {
+        // Normal shift
+        const div = document.createElement('div');
+        div.className = 'bg-blue-400 text-white px-2 py-1 rounded mb-1 cursor-move';
+        div.draggable = true;
+        div.dataset.shiftid = draggedShiftId;
+        div.innerText = displayText;
+        div.ondragstart = dragShift;
+        ev.currentTarget.appendChild(div);
+    }
+
+    // AJAX
+    const formData = new FormData();
+    formData.append('employee_id', employeeId);
+    formData.append('shift_id', shiftIdToSend === null ? '' : shiftIdToSend);
+    formData.append('work_date', workDate);
+
+    fetch('assign_shift_ajax.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Error updating shift: ' + data.error);
+            }
+        });
+}
 </script>
 
 
-    <!-- Shift -->
-    <div>
-        <label class="block mb-1 font-medium">Shift <span class="text-red-500">*</span></label>
-        <select name="shift_id" required class="border rounded w-full p-2">
-            <option value="">-- Select Shift --</option>
-            <?php while ($s = $shifts->fetch_assoc()): ?>
-                <option value="<?php echo $s['shift_id']; ?>">
-                    <?php echo htmlspecialchars($s['shift_code'] . " - " . $s['name']); ?>
-                    (<?php echo substr($s['start_time'],0,5) . " - " . substr($s['end_time'],0,5); ?>)
-                </option>
-            <?php endwhile; ?>
-        </select>
-    </div>
-
-    <!-- Work Date -->
-    <div>
-        <label class="block mb-1 font-medium">Work Date <span class="text-red-500">*</span></label>
-        <input type="date" name="work_date" required class="border rounded w-full p-2">
-    </div>
-
-    <!-- Notes -->
-    <div>
-        <label class="block mb-1 font-medium">Notes</label>
-        <textarea name="notes" rows="2" class="border rounded w-full p-2" placeholder="Optional..."></textarea>
-    </div>
-
-    <!-- Submit -->
-    <div class="md:col-span-2 flex justify-end">
-        <button type="submit" 
-                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
-            Assign Shift
-        </button>
-    </div>
-</form>
-</div>
 
 
-
-<!-- Ito yung body ng page kung saan mo ilalagay yung mga content na gusto mong ipakita sa page mo -->
-    
-</div>
-
-    </div>
-
-
-    
-  </div>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const userDropdownToggle = document.getElementById("userDropdownToggle");
