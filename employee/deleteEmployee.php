@@ -1,14 +1,7 @@
 <?php
-// deleteEmployee.php
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "hr3_system";
+// Include the database connection file
+include 'dbconnection/dbEmployee.php';
 
-$conn = new mysqli($host, $user, $pass, $db);
-if ($conn->connect_error) {
-    die("Database connection failed: " . $conn->connect_error);
-}
 
 $employee_id = $_GET['id'] ?? null;   // single delete
 $ids         = $_GET['ids'] ?? null;  // multiple delete (comma separated)

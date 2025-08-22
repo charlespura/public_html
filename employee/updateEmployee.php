@@ -1,14 +1,6 @@
 <?php
-// Database connection
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "hr3_system";
-$conn = new mysqli($host, $user, $pass, $db);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Include the database connection file
+include 'dbconnection/dbEmployee.php';
 
 function safe($value) {
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');

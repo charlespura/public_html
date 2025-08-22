@@ -61,16 +61,9 @@ ini_set('display_errors', 1);
 
   
 <?php
-// Database connection (adjust credentials for XAMPP)
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "hr3_system";
+// Include the database connection file
+include 'dbconnection/dbEmployee.php';
 
-$conn = new mysqli($host, $user, $pass, $db);
-if ($conn->connect_error) {
-    die("Database connection failed: " . $conn->connect_error);
-}
 
 // Pagination setup
 $limit = 20; // number of employees per page
