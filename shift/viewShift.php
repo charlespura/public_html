@@ -135,7 +135,10 @@ $result = $shiftConn->query($sql);
                     <td class="p-2 border"><?php echo htmlspecialchars($row['shift_code'] . " - " . $row['shift_name']); ?></td>
                     <td class="p-2 border"><?php echo substr($row['start_time'],0,5) . " - " . substr($row['end_time'],0,5); ?></td>
                     <td class="p-2 border"><?php echo htmlspecialchars($row['status']); ?></td>
-                    <td class="p-2 border"><?php echo htmlspecialchars($row['notes']); ?></td>
+                 <td class="p-2 border">
+    <?= htmlspecialchars($row['notes'] ?? "No notes") ?>
+</td>
+
                 </tr>
             <?php endwhile; ?>
         <?php else: ?>

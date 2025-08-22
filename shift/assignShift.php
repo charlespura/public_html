@@ -43,195 +43,264 @@ ini_set('display_errors', 1);
 <?php include '../profile.php'; ?>
 
         </div>
-<!-- Second Header: Submodules -->
 
-<?php 
+
+
+   <?php 
 include 'shiftnavbar.php'; 
 
-// Include DB connections
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// DB Connections
 include __DIR__ . '/../dbconnection/dbEmployee.php';
 $empConn = $conn;
 include __DIR__ . '/../dbconnection/dbShift.php';
 $shiftConn = $conn;
 
-// Fetch employees
-$employees = $empConn->query("SELECT employee_id, CONCAT(first_name,' ',last_name) AS fullname 
-                              FROM employees ORDER BY first_name");
+// Step 1: Departments
+$departments = $empConn->query("SELECT department_id, name FROM departments ORDER BY name");
 
-// Fetch shifts
-$shifts = $shiftConn->query("SELECT shift_id, shift_code, name, start_time, end_time 
-                             FROM shifts ORDER BY start_time");
+// Filters
+$selected_department = $_GET['department'] ?? '';
+$selected_role = $_GET['role'] ?? '';
+$view = $_GET['view'] ?? 'week';
+$week_start_input = $_GET['week_start'] ?? ''; // user-selected week start
 
-// Fetch existing schedules for the week
-$week_start = date('Y-m-d', strtotime('monday this week'));
-$week_end   = date('Y-m-d', strtotime('sunday this week'));
+// Step 2: Roles by Department
+$roles = [];
+if ($selected_department) {
+    $roles = $empConn->query("
+        SELECT DISTINCT p.position_id, p.title
+        FROM positions p
+        INNER JOIN employees e ON e.position_id = p.position_id
+        WHERE e.department_id = '{$selected_department}'
+        ORDER BY p.title
+    ");
+}
 
+// Step 3: Employees by Role
+$employees = [];
+if ($selected_role) {
+    $employees = $empConn->query("
+        SELECT employee_id, CONCAT(first_name,' ',last_name) AS fullname 
+        FROM employees 
+        WHERE position_id = '{$selected_role}'
+        ORDER BY first_name
+    ");
+}
+
+// Step 4: Shifts
+$shiftsArray = [];
+$shiftsResult = $shiftConn->query("SELECT shift_id, shift_code, start_time, end_time FROM shifts ORDER BY start_time");
+while($row = $shiftsResult->fetch_assoc()){
+    $shiftsArray[$row['shift_id']] = $row;
+}
+
+// Step 5: Determine days to show
+if ($view === 'month') {
+    $year  = $_GET['year'] ?? date('Y');
+    $month = $_GET['month'] ?? date('m');
+    $month_start = date('Y-m-01', strtotime("$year-$month-01"));
+    $month_end   = date('Y-m-t', strtotime($month_start));
+    $days = [];
+    $period = new DatePeriod(new DateTime($month_start), new DateInterval('P1D'), (new DateTime($month_end))->modify('+1 day'));
+    foreach ($period as $dt) { $days[] = $dt->format('Y-m-d'); }
+} else {
+    // Weekly view
+    if ($week_start_input) {
+        $week_start = date('Y-m-d', strtotime($week_start_input));
+    } else {
+        $week_start = date('Y-m-d', strtotime('monday this week'));
+    }
+    $week_end = date('Y-m-d', strtotime("$week_start +6 days"));
+
+    $days = [];
+    for($i=0;$i<7;$i++){ 
+        $days[] = date('Y-m-d', strtotime("$week_start +$i days")); 
+    }
+}
+
+// Step 6: Existing schedules and notes
 $schedules = [];
-$res = $shiftConn->query("SELECT employee_id, shift_id, work_date 
-                          FROM employee_schedules 
-                          WHERE work_date BETWEEN '$week_start' AND '$week_end'");
-while($row = $res->fetch_assoc()) {
-    $schedules[$row['employee_id']][$row['work_date']] = $row['shift_id'];
+$notes = [];
+if ($selected_role && !empty($days)) {
+    $dayStart = $days[0];
+    $dayEnd   = end($days);
+    $res = $shiftConn->query("
+        SELECT employee_id, shift_id, work_date, notes 
+        FROM employee_schedules 
+        WHERE work_date BETWEEN '$dayStart' AND '$dayEnd'
+    ");
+    while($row = $res->fetch_assoc()){
+        $schedules[$row['employee_id']][$row['work_date']] = $row['shift_id'];
+        $notes[$row['employee_id']][$row['work_date']] = $row['notes'];
+    }
 }
 ?>
+
 <style>
-    .selected-shift {
-        outline: 2px solid black;
-        outline-offset: 2px;
-    }
+table { border-collapse: collapse; width: 100%; }
+th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+th { background:#f4f4f4; }
+select { padding:5px; width:100%; }
+.note-icon { cursor:pointer; color: #007bff; font-weight:bold; margin-left:5px; }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; transition: all 0.3s ease; }
+.modal-content { background:#fff; padding:20px; border-radius:5px; width:300px; transform: translateY(-50px); transition: all 0.3s ease; }
+.modal.show { display:flex; }
+.modal.show .modal-content { transform: translateY(0); }
 </style>
 
-<div class="bg-white shadow-md rounded-xl p-4 w-full mx-auto mt-6 mb-8">
-    <h2 class="text-xl font-bold mb-4">Weekly Shift Scheduler</h2>
+<h2>Role-Based Shift Scheduling</h2>
 
-    <div class="grid grid-cols-8 gap-1 text-sm">
-        <div class="font-bold p-1">Employee</div>
-        <?php
-        $days = [];
-        for($i=0;$i<7;$i++){
-            $day = date('D M d', strtotime("{$week_start} +{$i} days"));
-            $days[] = date('Y-m-d', strtotime("{$week_start} +{$i} days"));
-            echo "<div class='font-bold text-center p-1'>$day</div>";
-        }
-        ?>
+<!-- Department -->
+<form method="GET">
+<label>Department:</label>
+<select name="department" onchange="this.form.submit()">
+<option value="">--Select Department--</option>
+<?php while($d=$departments->fetch_assoc()): ?>
+<option value="<?= $d['department_id'] ?>" <?= $selected_department==$d['department_id']?'selected':'' ?>>
+<?= htmlspecialchars($d['name']) ?></option>
+<?php endwhile; ?>
+</select>
+</form>
 
-        <?php while($emp = $employees->fetch_assoc()): ?>
-            <div class="font-medium py-1"><?php echo htmlspecialchars($emp['fullname']); ?></div>
-            <?php foreach($days as $day): ?>
-                <div class="border rounded p-1 min-h-[40px] bg-gray-50 flex flex-col items-center justify-center schedule-cell"
-                     data-employee="<?php echo $emp['employee_id']; ?>"
-                     data-date="<?php echo $day; ?>"
-                     ondragover="allowDrop(event)" 
-                     ondrop="dropShift(event)"
-                     onclick="clickAssign(this)">
-                    <?php 
-                    $shiftId = $schedules[$emp['employee_id']][$day] ?? null;
+<!-- Role -->
+<?php if ($selected_department): ?>
+<form method="GET">
+<input type="hidden" name="department" value="<?= $selected_department ?>">
+<label>Role:</label>
+<select name="role" onchange="this.form.submit()">
+<option value="">--Select Role--</option>
+<?php while($r=$roles->fetch_assoc()): ?>
+<option value="<?= $r['position_id'] ?>" <?= $selected_role==$r['position_id']?'selected':'' ?>>
+<?= htmlspecialchars($r['title']) ?></option>
+<?php endwhile; ?>
+</select>
+</form>
+<?php endif; ?>
 
-                    if ($shiftId) {
-                        $shift = $shiftConn->query("SELECT name, shift_code FROM shifts WHERE shift_id='$shiftId'")->fetch_assoc();
-                        echo "<div class='bg-blue-400 text-white px-1.5 py-0.5 rounded cursor-move text-xs' draggable='true' ondragstart='dragShift(event)' data-shiftid='$shiftId'>{$shift['shift_code']} - {$shift['name']}</div>";
-                    } else {
-                        echo "<div class='bg-gray-400 text-white px-1.5 py-0.5 rounded cursor-default text-xs'>Off</div>";
-                    }
-                    ?>
-                </div>
-            <?php endforeach; ?>
-        <?php endwhile; ?>
-    </div>
+<!-- Weekly view picker -->
+<form method="GET" style="margin-top:10px;">
+<input type="hidden" name="department" value="<?= $selected_department ?>">
+<input type="hidden" name="role" value="<?= $selected_role ?>">
+<label>Week Start:</label>
+<input type="date" name="week_start" value="<?= $week_start_input ?: date('Y-m-d', strtotime('monday this week')) ?>">
+<input type="hidden" name="view" value="week">
+<button type="submit">Show Week</button>
+</form>
 
-    <h3 class="mt-4 font-bold text-sm">Available Shifts (Click or Drag to Assign)</h3>
-    <div class="flex flex-wrap gap-2 mt-2">
-        <?php
-        $shifts->data_seek(0);
-        while($s = $shifts->fetch_assoc()): ?>
-            <div class="bg-green-500 text-white px-2 py-0.5 rounded cursor-pointer text-xs available-shift" 
-                 draggable="true" 
-                 ondragstart="dragShift(event)"
-                 onclick="selectShift(this)"
-                 data-shiftid="<?php echo $s['shift_id']; ?>">
-                <?php echo $s['shift_code'] . " - " . $s['name']; ?>
-            </div>
-        <?php endwhile; ?>
+<!-- Schedule Table -->
+<?php if($selected_role && $employees->num_rows>0): ?>
+<table>
+<thead>
+<tr>
+<th>Employee</th>
+<?php foreach($days as $day): ?>
+<th><?= date('D<br>m/d', strtotime($day)) ?></th>
+<?php endforeach; ?>
+</tr>
+</thead>
+<tbody>
+<?php while($emp=$employees->fetch_assoc()): ?>
+<tr>
+<td><?= htmlspecialchars($emp['fullname']) ?></td>
+<?php foreach($days as $day): 
+$shift_id = $schedules[$emp['employee_id']][$day] ?? '';
+$note_text = $notes[$emp['employee_id']][$day] ?? '';
+?>
+<td>
+<select data-employee="<?= $emp['employee_id'] ?>" data-date="<?= $day ?>" onchange="saveShift(this)">
+<option value="">--</option>
+<?php foreach($shiftsArray as $s): ?>
+<option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
+<?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
+</option>
+<?php endforeach; ?>
+</select>
+<span class="note-icon" onclick="openNoteModal('<?= $emp['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">📝</span>
+</td>
+<?php endforeach; ?>
+</tr>
+<?php endwhile; ?>
+</tbody>
+</table>
+<?php elseif($selected_role): ?>
+<p>No employees found for this role.</p>
+<?php endif; ?>
 
-        <!-- Remove Shift -->
-        <div class="bg-red-500 text-white px-2 py-0.5 rounded cursor-pointer text-xs available-shift"
-             draggable="true"
-             ondragstart="dragShift(event)"
-             onclick="selectShift(this)"
-             data-shiftid="REMOVE">
-            Remove Shift
-        </div>
-    </div>
+<!-- Note Modal -->
+<div id="noteModal" class="modal">
+<div class="modal-content">
+<h4>Notes</h4>
+<textarea id="noteText" style="width:100%;height:100px"></textarea>
+<br><br>
+<button onclick="saveNote()" class="bg-blue-500 text-white px-4 py-2 rounded">Save</button>
+<button onclick="closeNoteModal()" class="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+</div>
 </div>
 
 <script>
-let draggedShiftId = null;
-let draggedShiftName = '';
-let selectedShiftId = null;
-let selectedShiftName = null;
-let lastSelectedEl = null;
+let currentEmployee = null;
+let currentDate = null;
 
-function dragShift(ev) {
-    draggedShiftId = ev.target.dataset.shiftid;
-    draggedShiftName = ev.target.innerText;
+function saveShift(select){
+    const employeeId = select.dataset.employee;
+    const workDate = select.dataset.date;
+    const shiftId = select.value;
+
+    fetch('save_schedule.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({employee_id:employeeId, work_date:workDate, shift_id:shiftId})
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.status==="success") select.style.backgroundColor="#d4edda";
+        else select.style.backgroundColor="#f8d7da";
+        setTimeout(()=>select.style.backgroundColor='',1000);
+    })
+    .catch(err=>{
+        select.style.backgroundColor="#f8d7da";
+        setTimeout(()=>select.style.backgroundColor='',1000);
+        alert("Error saving schedule");
+    });
 }
 
-function allowDrop(ev) {
-    ev.preventDefault();
+// Note modal
+function openNoteModal(employeeId, workDate, text){
+    currentEmployee = employeeId;
+    currentDate = workDate;
+    document.getElementById('noteText').value = text;
+    const modal = document.getElementById('noteModal');
+    modal.classList.add('show');
+}
+function closeNoteModal(){
+    const modal = document.getElementById('noteModal');
+    modal.classList.remove('show');
 }
 
-function dropShift(ev) {
-    ev.preventDefault();
-    handleAssign(ev.currentTarget, draggedShiftId, draggedShiftName);
-}
+// Save note via AJAX
+function saveNote(){
+    const note = document.getElementById('noteText').value;
 
-/* ------- CLICK TO SELECT SHIFT ------- */
-function selectShift(el) {
-    // Reset previous selection
-    if (lastSelectedEl) lastSelectedEl.classList.remove("selected-shift");
-
-    selectedShiftId = el.dataset.shiftid;
-    selectedShiftName = el.innerText;
-    lastSelectedEl = el;
-
-    // Highlight selected
-    el.classList.add("selected-shift");
-}
-
-/* ------- CLICK TO ASSIGN TO CELL ------- */
-function clickAssign(cell) {
-    if (!selectedShiftId) return; // nothing selected
-
-    handleAssign(cell, selectedShiftId, selectedShiftName);
-
-    // Optional: clear selection after assignment
-    if (lastSelectedEl) lastSelectedEl.classList.remove("selected-shift");
-    selectedShiftId = null;
-    selectedShiftName = null;
-    lastSelectedEl = null;
-}
-
-/* ------- COMMON ASSIGN HANDLER ------- */
-function handleAssign(cell, shiftId, shiftName) {
-    const employeeId = cell.dataset.employee;
-    const workDate = cell.dataset.date;
-    if (!employeeId || !workDate) return;
-
-    let shiftIdToSend = shiftId;
-
-    if (shiftId === 'REMOVE') {
-        cell.innerHTML = '';
-        const offDiv = document.createElement('div');
-        offDiv.className = 'bg-gray-400 text-white px-1.5 py-0.5 rounded text-xs cursor-default';
-        offDiv.innerText = 'Off';
-        cell.appendChild(offDiv);
-    } else {
-        cell.innerHTML = '';
-        const div = document.createElement('div');
-        div.className = 'bg-blue-400 text-white px-1.5 py-0.5 rounded cursor-move text-xs';
-        div.draggable = true;
-        div.dataset.shiftid = shiftId;
-        div.innerText = shiftName;
-        div.ondragstart = dragShift;
-        cell.appendChild(div);
-    }
-
-    // AJAX update
-    const formData = new FormData();
-    formData.append('employee_id', employeeId);
-    formData.append('shift_id', shiftIdToSend === null ? '' : shiftIdToSend);
-    formData.append('work_date', workDate);
-
-    fetch('assign_shift_ajax.php', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            if (!data.success) {
-                alert('Error updating shift: ' + data.error);
-            }
-        });
+    fetch('save_note.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({
+            employee_id: currentEmployee,
+            work_date: currentDate,
+            notes: note
+        })
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        alert(data.message);
+        closeNoteModal();
+    })
+    .catch(err=>{ alert("Error saving note"); closeNoteModal(); });
 }
 </script>
-
 
 
 
