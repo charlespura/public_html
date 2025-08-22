@@ -32,7 +32,7 @@ ini_set('display_errors', 1);
     <div class="flex-1 flex flex-col overflow-y-auto">
 
       <!-- Main Top Header (inside content) -->
-      <main class="p-6 space-y-4">
+      <main class="p-6">
         <!-- Header -->
         <div class="flex items-center justify-between border-b py-6">
           <!-- Left: Title -->
