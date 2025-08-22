@@ -62,7 +62,7 @@ ini_set('display_errors', 1);
 
 <?php
 // Include the database connection file
-include 'dbconnection/dbEmployee.php';
+include __DIR__ .'/../dbconnection/dbEmployee.php';
 
 if ($conn->connect_error) {
     die("Database connection failed: " . $conn->connect_error);

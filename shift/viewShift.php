@@ -54,11 +54,11 @@ include 'shiftNavbar.php'; ?>
 
 <?php
 // Include employee DB connection
-include __DIR__ . '/../../dbconnection/dbEmployee.php';
+include __DIR__ . '/../dbconnection/dbEmployee.php';
 $empConn = $conn; // Employee DB connection
 
 // Include shift DB connection
-include __DIR__ . '/../../dbconnection/dbShift.php';
+include __DIR__ . '/../dbconnection/dbShift.php';
 $shiftConn = $conn; // Shift DB connection
 
 // Capture filters

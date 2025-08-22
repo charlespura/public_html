@@ -4,7 +4,7 @@
 $host = "localhost";      // Database host
 $user = "hratier2";           // Your MySQL username
 $pass = "";               // Your MySQL password
-$db   = "Hr3_system"; // Database name
+$db   = "hr3_system"; // Database name
 
 // Create connection
 $conn = new mysqli($host, $user, $pass, $db);

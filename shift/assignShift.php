@@ -47,7 +47,7 @@ ini_set('display_errors', 1);
 
 
 <?php 
-include 'shiftNavbar.php'; ?>
+include 'shiftnavbar.php'; ?>
 
 
 
@@ -55,17 +55,17 @@ include 'shiftNavbar.php'; ?>
     <h2 class="text-2xl font-bold mb-6">Assign Shift to Employee</h2>
 <?php
 // Include employee DB connection
-include __DIR__ . '/../../dbconnection/dbEmployee.php';
+include __DIR__ . '/../dbconnection/dbEmployee.php';
 $empConn = $conn; // rename the included $conn to $empConn
 
 // Include shift DB connection
-include __DIR__ . '/../../dbconnection/dbShift.php';
+include __DIR__ . '/../dbconnection/dbShift.php';
 $shiftConn = $conn; // rename the included $conn to $shiftConn
 ?>
 
 <?php
-include __DIR__ . '/../../dbconnection/dbEmployee.php'; // $empConn
-include __DIR__ . '/../../dbconnection/dbShift.php';    // $shiftConn
+include __DIR__ . '/../dbconnection/dbEmployee.php'; // $empConn
+include __DIR__ . '/../dbconnection/dbShift.php';    // $shiftConn
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

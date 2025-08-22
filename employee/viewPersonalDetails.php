@@ -65,7 +65,7 @@ ini_set('display_errors', 1);
 
 <?php
 // Include the database connection file
-include 'dbconnection/dbEmployee.php';
+include __DIR__ .'/../dbconnection/dbEmployee.php';
 
 function safe($value) {
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');

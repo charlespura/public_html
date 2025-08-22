@@ -1,6 +1,6 @@
 <?php
 // Include the database connection file
-include 'dbconnection/dbEmployee.php';
+include __DIR__ .'/../dbconnection/dbEmployee.php';
 
 
 $employee_id = $_GET['id'] ?? null;   // single delete
