@@ -124,13 +124,7 @@ while($row = $res->fetch_assoc()) {
                 <?php echo $s['shift_code'] . " - " . $s['name']; ?>
             </div>
         <?php endwhile; ?>
-        <!-- Off / No Shift -->
-        <div class="bg-gray-400 text-white px-3 py-1 rounded cursor-move"
-             draggable="true"
-             ondragstart="dragShift(event)"
-             data-shiftid="">
-            Off / No Shift
-        </div>
+      
         <!-- Remove Shift -->
         <div class="bg-red-500 text-white px-3 py-1 rounded cursor-move"
              draggable="true"
@@ -163,32 +157,37 @@ function dropShift(ev) {
     let shiftIdToSend = draggedShiftId;
     let displayText = draggedShiftName;
 
-    ev.currentTarget.innerHTML = ''; // clear first
+    const cell = ev.currentTarget;
+    const currentShiftDiv = cell.querySelector('div');
+
+    if (!currentShiftDiv) return; // nothing to remove
 
     if (draggedShiftId === 'REMOVE') {
-        shiftIdToSend = 'REMOVE';
-        displayText = '';
-        // nothing appended
-    } else if (!draggedShiftId) {
-        // Off
-        shiftIdToSend = null;
-        displayText = 'Off';
-        const div = document.createElement('div');
-        div.className = 'bg-gray-400 text-white px-2 py-1 rounded mb-1 cursor-move';
-        div.draggable = true;
-        div.dataset.shiftid = '';
-        div.innerText = displayText;
-        div.ondragstart = dragShift;
-        ev.currentTarget.appendChild(div);
+        // Only remove if not already 'Off'
+        if (currentShiftDiv.dataset.shiftid) {
+            shiftIdToSend = 'REMOVE';
+            
+            // Clear cell and add Off placeholder
+            cell.innerHTML = '';
+            const offDiv = document.createElement('div');
+            offDiv.className = 'bg-gray-400 text-white px-2 py-1 rounded mb-1 cursor-default';
+            offDiv.innerText = 'Off';
+            cell.appendChild(offDiv);
+
+        } else {
+            // If cell is already Off, do nothing
+            return;
+        }
     } else {
-        // Normal shift
+        // Normal shift → replace or add
+        cell.innerHTML = '';
         const div = document.createElement('div');
         div.className = 'bg-blue-400 text-white px-2 py-1 rounded mb-1 cursor-move';
         div.draggable = true;
         div.dataset.shiftid = draggedShiftId;
         div.innerText = displayText;
         div.ondragstart = dragShift;
-        ev.currentTarget.appendChild(div);
+        cell.appendChild(div);
     }
 
     // AJAX
@@ -205,6 +204,7 @@ function dropShift(ev) {
             }
         });
 }
+
 </script>
 
 
