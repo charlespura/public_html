@@ -48,7 +48,7 @@ ini_set('display_errors', 1);
 
 
 <?php 
-include 'shiftNavbar.php'; ?>
+include 'shiftnavbar.php'; ?>
 <div class="bg-white shadow-md rounded-2xl p-10 w-full mx-auto mt-10 mb-10">
     <h2 class="text-2xl font-bold mb-6">Employee Shift Schedule</h2>
 

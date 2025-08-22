@@ -3,7 +3,7 @@
 
 $host = "localhost";      // Database host
 $user = "hratier2";           // Your MySQL username hratier2
-$pass = "";               // Your MySQL password
+$pass = "ily";               // Your MySQL password
 $db   = "hr3_system"; // Database name
 
 // Create connection
