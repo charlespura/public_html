@@ -3,6 +3,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
 
+<!-- HTML content here -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +12,7 @@ ini_set('display_errors', 1);
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sidebar</title>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="icon" type="image/png" href="picture/logo2.png" />
+  <link rel="icon" type="image/png" href="../picture/logo2.png" />
   
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -57,9 +59,9 @@ ini_set('display_errors', 1);
     <!-- Logo & Toggle -->
     <div class="flex items-center justify-between px-4 py-4 border-b border-gray-700">
       <!-- Large logo for expanded sidebar -->
-      <img src="/picture/logo.png" alt="Logo" class="h-14 sidebar-logo-expanded" />
+      <img src="../picture/logo.png" alt="Logo" class="h-14 sidebar-logo-expanded" />
       <!-- Small logo for collapsed sidebar (initially hidden) -->
-      <img src="/picture/logo2.png" alt="Logo" class="h-14 sidebar-logo-collapsed hidden" />
+      <img src="../picture/logo2.png" alt="Logo" class="h-14 sidebar-logo-collapsed hidden" />
       <button id="sidebar-toggle" class="text-white focus:outline-none hidden md:block">
         <i data-lucide="chevron-right" class="w-5 h-5 transition-transform"></i>
       </button>
@@ -179,3 +181,4 @@ ini_set('display_errors', 1);
   </script>
 </body>
 </html>
+

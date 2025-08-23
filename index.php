@@ -24,7 +24,7 @@ if (!isset($_SESSION['user_id'])) {
   <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="icon" type="image/png" href="/web/picture/logo2.png" />
+  <link rel="icon" type="image/png" href="../picture/logo2.png" />
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {

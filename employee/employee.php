@@ -12,7 +12,7 @@ ini_set('display_errors', 1);
   <title>Employee  </title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="icon" type="image/png" href="/web/picture/logo2.png" />
+  <link rel="icon" type="image/png" href="../picture/logo2.png" />
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -298,6 +298,8 @@ $stmt->close();
 $conn->close();
 ?>
 </div>
+
+
 <!-- Delete Confirmation Modal -->
 <div id="deleteModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50 transition-opacity duration-300">
   <div id="deleteModalContent" 

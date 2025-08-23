@@ -12,7 +12,7 @@ ini_set('display_errors', 1);
   <title>Time and Attendance</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="icon" type="image/png" href="/web/picture/logo2.png" />
+  <link rel="icon" type="image/png" href="../picture/logo2.png" />
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -157,39 +157,40 @@ $shifts = $shiftConn->query("SELECT * FROM shifts ORDER BY start_time");
         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">➕ Add Shift</button>
     </div>
 </form>
-
-<!-- SHIFT TABLE -->
-<h2 class="text-2xl font-bold mb-4">All Shifts</h2>
-<table class="min-w-full bg-white border rounded shadow">
-    <thead>
-        <tr class="bg-gray-100 text-left">
-            <th class="py-2 px-4 border">Code</th>
-            <th class="py-2 px-4 border">Name</th>
-            <th class="py-2 px-4 border">Start</th>
-            <th class="py-2 px-4 border">End</th>
-            <th class="py-2 px-4 border">Break</th>
-            <th class="py-2 px-4 border">Overnight</th>
-            <th class="py-2 px-4 border">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    <?php while($s = $shifts->fetch_assoc()): ?>
-        <tr>
-            <td class="py-2 px-4 border"><?= htmlspecialchars($s['shift_code']) ?></td>
-            <td class="py-2 px-4 border"><?= htmlspecialchars($s['name']) ?></td>
-            <td class="py-2 px-4 border"><?= $s['start_time'] ?></td>
-            <td class="py-2 px-4 border"><?= $s['end_time'] ?></td>
-            <td class="py-2 px-4 border"><?= $s['break_minutes'] ?> min</td>
-            <td class="py-2 px-4 border"><?= $s['is_overnight'] ? 'Yes' : 'No' ?></td>
-            <td class="py-2 px-4 border space-x-2">
-                <button type="button" onclick="openEditModal('<?= $s['shift_id'] ?>','<?= htmlspecialchars($s['shift_code'],ENT_QUOTES) ?>','<?= htmlspecialchars($s['name'],ENT_QUOTES) ?>','<?= $s['start_time'] ?>','<?= $s['end_time'] ?>','<?= $s['break_minutes'] ?>','<?= $s['is_overnight'] ?>')" class="text-blue-600 hover:text-blue-800">✏️ Edit</button>
-                <button type="button" onclick="openDeleteModal('<?= $s['shift_id'] ?>','<?= htmlspecialchars($s['name'],ENT_QUOTES) ?>')" class="text-red-600 hover:text-red-800">🗑️ Delete</button>
-            </td>
-        </tr>
-    <?php endwhile; ?>
-    </tbody>
-</table>
+<div class="overflow-x-auto">
+    <!-- SHIFT TABLE -->
+    <h2 class="text-2xl font-bold mb-4">All Shifts</h2>
+    <table class="min-w-full bg-white border rounded shadow">
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="py-2 px-3 border text-left text-sm md:text-base">Code</th>
+                <th class="py-2 px-3 border text-left text-sm md:text-base">Name</th>
+                <th class="py-2 px-3 border text-left text-sm md:text-base">Start</th>
+                <th class="py-2 px-3 border text-left text-sm md:text-base">End</th>
+                <th class="py-2 px-3 border text-left text-sm md:text-base">Break</th>
+                <th class="py-2 px-3 border text-left text-sm md:text-base">Overnight</th>
+                <th class="py-2 px-3 border text-left text-sm md:text-base">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php while($s = $shifts->fetch_assoc()): ?>
+            <tr class="hover:bg-gray-50">
+                <td class="py-2 px-3 border text-sm md:text-base"><?= htmlspecialchars($s['shift_code']) ?></td>
+                <td class="py-2 px-3 border text-sm md:text-base"><?= htmlspecialchars($s['name']) ?></td>
+                <td class="py-2 px-3 border text-sm md:text-base"><?= $s['start_time'] ?></td>
+                <td class="py-2 px-3 border text-sm md:text-base"><?= $s['end_time'] ?></td>
+                <td class="py-2 px-3 border text-sm md:text-base"><?= $s['break_minutes'] ?> min</td>
+                <td class="py-2 px-3 border text-sm md:text-base"><?= $s['is_overnight'] ? 'Yes' : 'No' ?></td>
+                <td class="py-2 px-3 border text-sm md:text-base space-x-2">
+                    <button type="button" onclick="openEditModal('<?= $s['shift_id'] ?>','<?= htmlspecialchars($s['shift_code'],ENT_QUOTES) ?>','<?= htmlspecialchars($s['name'],ENT_QUOTES) ?>','<?= $s['start_time'] ?>','<?= $s['end_time'] ?>','<?= $s['break_minutes'] ?>','<?= $s['is_overnight'] ?>')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm">✏️ Edit</button>
+                    <button type="button" onclick="openDeleteModal('<?= $s['shift_id'] ?>','<?= htmlspecialchars($s['name'],ENT_QUOTES) ?>')" class="text-red-600 hover:text-red-800 text-xs md:text-sm">🗑️ Delete</button>
+                </td>
+            </tr>
+        <?php endwhile; ?>
+        </tbody>
+    </table>
 </div>
+
 
 <!-- EDIT MODAL -->
 <div id="editModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50 transition-opacity duration-300">

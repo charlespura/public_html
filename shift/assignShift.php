@@ -12,7 +12,7 @@ ini_set('display_errors', 1);
   <title>Time and Attendance</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="icon" type="image/png" href="/web/picture/logo2.png" />
+  <link rel="icon" type="image/png" href="../picture/logo2.png" />
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -45,8 +45,7 @@ ini_set('display_errors', 1);
         </div>
 
 
-
-   <?php 
+<?php 
 include 'shiftnavbar.php'; 
 
 error_reporting(E_ALL);
@@ -65,7 +64,7 @@ $departments = $empConn->query("SELECT department_id, name FROM departments ORDE
 $selected_department = $_GET['department'] ?? '';
 $selected_role = $_GET['role'] ?? '';
 $view = $_GET['view'] ?? 'week';
-$week_start_input = $_GET['week_start'] ?? ''; // user-selected week start
+$week_start_input = $_GET['week_start'] ?? '';
 
 // Step 2: Roles by Department
 $roles = [];
@@ -151,83 +150,106 @@ select { padding:5px; width:100%; }
 .modal.show .modal-content { transform: translateY(0); }
 </style>
 
-<h2>Role-Based Shift Scheduling</h2>
+<h2 class="text-2xl font-bold mb-6">Role-Based Shift Scheduling</h2>
 
 <!-- Department -->
-<form method="GET">
-<label>Department:</label>
-<select name="department" onchange="this.form.submit()">
-<option value="">--Select Department--</option>
-<?php while($d=$departments->fetch_assoc()): ?>
-<option value="<?= $d['department_id'] ?>" <?= $selected_department==$d['department_id']?'selected':'' ?>>
-<?= htmlspecialchars($d['name']) ?></option>
-<?php endwhile; ?>
-</select>
+<form method="GET" class="mb-4">
+  <label class="block text-sm font-medium text-gray-700 mb-1">Department:</label>
+  <select name="department" onchange="this.form.submit()"
+    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+    <option value="">--Select Department--</option>
+    <?php while($d=$departments->fetch_assoc()): ?>
+      <option value="<?= $d['department_id'] ?>" <?= $selected_department==$d['department_id']?'selected':'' ?>>
+        <?= htmlspecialchars($d['name']) ?>
+      </option>
+    <?php endwhile; ?>
+  </select>
 </form>
 
 <!-- Role -->
 <?php if ($selected_department): ?>
-<form method="GET">
-<input type="hidden" name="department" value="<?= $selected_department ?>">
-<label>Role:</label>
-<select name="role" onchange="this.form.submit()">
-<option value="">--Select Role--</option>
-<?php while($r=$roles->fetch_assoc()): ?>
-<option value="<?= $r['position_id'] ?>" <?= $selected_role==$r['position_id']?'selected':'' ?>>
-<?= htmlspecialchars($r['title']) ?></option>
-<?php endwhile; ?>
-</select>
+<form method="GET" class="mb-4">
+  <input type="hidden" name="department" value="<?= $selected_department ?>">
+  <label class="block text-sm font-medium text-gray-700 mb-1">Role:</label>
+  <select name="role" onchange="this.form.submit()"
+    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+    <option value="">--Select Role--</option>
+    <?php while($r=$roles->fetch_assoc()): ?>
+      <option value="<?= $r['position_id'] ?>" <?= $selected_role==$r['position_id']?'selected':'' ?>>
+        <?= htmlspecialchars($r['title']) ?>
+      </option>
+    <?php endwhile; ?>
+  </select>
 </form>
 <?php endif; ?>
 
 <!-- Weekly view picker -->
-<form method="GET" style="margin-top:10px;">
-<input type="hidden" name="department" value="<?= $selected_department ?>">
-<input type="hidden" name="role" value="<?= $selected_role ?>">
-<label>Week Start:</label>
-<input type="date" name="week_start" value="<?= $week_start_input ?: date('Y-m-d', strtotime('monday this week')) ?>">
-<input type="hidden" name="view" value="week">
-<button type="submit">Show Week</button>
+<form method="GET" class="mb-6 flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+  <input type="hidden" name="department" value="<?= $selected_department ?>">
+  <input type="hidden" name="role" value="<?= $selected_role ?>">
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Week Start:</label>
+    <input type="date" name="week_start"
+      value="<?= $week_start_input ?: date('Y-m-d', strtotime('monday this week')) ?>"
+      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+  </div>
+  <input type="hidden" name="view" value="week">
+  <button type="submit"
+    class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+    Show Week
+  </button>
 </form>
 
 <!-- Schedule Table -->
 <?php if($selected_role && $employees->num_rows>0): ?>
-<table>
-<thead>
-<tr>
-<th>Employee</th>
-<?php foreach($days as $day): ?>
-<th><?= date('D<br>m/d', strtotime($day)) ?></th>
-<?php endforeach; ?>
-</tr>
-</thead>
-<tbody>
-<?php while($emp=$employees->fetch_assoc()): ?>
-<tr>
-<td><?= htmlspecialchars($emp['fullname']) ?></td>
-<?php foreach($days as $day): 
-$shift_id = $schedules[$emp['employee_id']][$day] ?? '';
-$note_text = $notes[$emp['employee_id']][$day] ?? '';
-?>
-<td>
-<select data-employee="<?= $emp['employee_id'] ?>" data-date="<?= $day ?>" onchange="saveShift(this)">
-<option value="">--</option>
-<?php foreach($shiftsArray as $s): ?>
-<option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
-<?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
-</option>
-<?php endforeach; ?>
-</select>
-<span class="note-icon" onclick="openNoteModal('<?= $emp['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">📝</span>
-</td>
-<?php endforeach; ?>
-</tr>
-<?php endwhile; ?>
-</tbody>
-</table>
+<div class="overflow-x-auto bg-white shadow rounded-lg">
+  <table class="min-w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-100 text-sm">
+        <th class="px-4 py-2 text-left font-semibold">Employee</th>
+        <?php foreach($days as $day): ?>
+          <th class="px-4 py-2 text-center font-semibold">
+            <?= date('D', strtotime($day)) ?><br>
+            <span class="text-xs text-gray-500"><?= date('m/d', strtotime($day)) ?></span>
+          </th>
+        <?php endforeach; ?>
+      </tr>
+    </thead>
+    <tbody class="text-sm divide-y">
+      <?php while($emp=$employees->fetch_assoc()): ?>
+        <tr>
+          <td class="px-4 py-2 font-medium whitespace-nowrap"><?= htmlspecialchars($emp['fullname']) ?></td>
+          <?php foreach($days as $day): 
+            $shift_id = $schedules[$emp['employee_id']][$day] ?? '';
+            $note_text = $notes[$emp['employee_id']][$day] ?? '';
+          ?>
+          <td class="px-2 py-2 text-center align-middle">
+            <div class="flex flex-col items-center gap-1">
+              <select data-employee="<?= $emp['employee_id'] ?>" data-date="<?= $day ?>" onchange="saveShift(this)"
+                class="w-full sm:w-auto text-xs sm:text-sm p-1 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="">Off</option>
+                <?php foreach($shiftsArray as $s): ?>
+                  <option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
+                    <?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
+                  </option>
+                <?php endforeach; ?>
+              </select>
+              <button type="button" class="text-blue-500 hover:text-blue-700 text-lg"
+                onclick="openNoteModal('<?= $emp['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">
+                📝
+              </button>
+            </div>
+          </td>
+          <?php endforeach; ?>
+        </tr>
+      <?php endwhile; ?>
+    </tbody>
+  </table>
+</div>
 <?php elseif($selected_role): ?>
-<p>No employees found for this role.</p>
+<p class="text-gray-600 italic">No employees found for this role.</p>
 <?php endif; ?>
+
 
 <!-- Note Modal -->
 <div id="noteModal" class="modal">
@@ -279,8 +301,6 @@ function closeNoteModal(){
     const modal = document.getElementById('noteModal');
     modal.classList.remove('show');
 }
-
-// Save note via AJAX
 function saveNote(){
     const note = document.getElementById('noteText').value;
 
@@ -293,16 +313,30 @@ function saveNote(){
             notes: note
         })
     })
-    .then(res=>res.json())
-    .then(data=>{
-        alert(data.message);
-        closeNoteModal();
+    .then(res => res.text())   // ✅ get raw HTML
+    .then(html => {
+        const modal = document.getElementById('noteModal');
+        const content = modal.querySelector('.modal-content');
+
+        // Insert success/error message
+        const messageDiv = document.createElement('div');
+        messageDiv.innerHTML = html;
+        content.appendChild(messageDiv);
+
+        // ⏳ Remove message after 3 seconds, then close modal
+        setTimeout(() => {
+            messageDiv.remove();
+            closeNoteModal();
+        }, 3000);
     })
-    .catch(err=>{ alert("Error saving note"); closeNoteModal(); });
+    .catch(err=>{
+        alert("Error saving note");
+        closeNoteModal();
+    });
 }
+
+
 </script>
-
-
 
 
   <script>
