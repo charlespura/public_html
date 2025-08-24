@@ -5,7 +5,8 @@ ini_set('display_errors', 1);
 ?>
 <?php
 session_start();
-include __DIR__ . '/dbconnection/mainDB.php';
+
+include __DIR__ . 'dbconnection/mainDB.php';
 
 $errors = [];
 
