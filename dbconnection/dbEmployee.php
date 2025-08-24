@@ -2,9 +2,9 @@
 // dbShift.php
 
 $host = "localhost";      // Database host
-$user = "root";           // Your MySQL username hratier2
-$pass = "";               // Your MySQL password ily
-$db   = "hr3_system"; // Database name
+$user = "hr3_employeedb";           // Your MySQL username hratier2
+$pass = "tv#4S3PmAS63s9j@";               // Your MySQL password ily
+$db   = "hr3_employeedb"; // Database name
 
 // Create connection
 $conn = new mysqli($host, $user, $pass, $db);
