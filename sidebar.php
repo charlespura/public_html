@@ -4,19 +4,6 @@ ini_set('display_errors', 1);
 ?>
 
 
-<?php
-session_start(); // Must be first
-
-// Make sure user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header("Location: /index.php"); // redirect to login
-    exit;
-}
-
-// No role restriction here — all users can access
-$roles = $_SESSION['roles'] ?? 'Employee'; // store role for sidebar
-?>
-
 <!-- HTML content here -->
 
 <!DOCTYPE html>
