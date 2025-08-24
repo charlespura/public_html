@@ -2,8 +2,8 @@
 // dbShift.php
 
 $host = "localhost";      // Database host
-$user = "hr3_databasemain";           // Your MySQL username hratier2
-$pass = "opIU3pBa9U9#crCd";               // Your MySQL password
+$user = "hratier2";           // Your MySQL username hratier2
+$pass = "";               // Your MySQL password
 $db   = "hr3_databasemain"; // Database name
 
 // Create connection
