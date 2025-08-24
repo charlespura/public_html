@@ -13,8 +13,11 @@ ini_set('display_errors', 1);
 if (in_array($roles, ['Admin', 'Manager'])): 
     
 ?>
-<?php $currentPage = basename($_SERVER['PHP_SELF']); ?>
 
+
+ <?php
+        $currentPage = $_SERVER['PHP_SELF'];
+      ?>
 <div class="bg-gray-800 px-4 py-3 flex flex-wrap md:flex-nowrap gap-2 text-sm font-medium text-white rounded-b-md overflow-x-auto relative">
 
     <a href=".php"

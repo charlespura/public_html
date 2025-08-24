@@ -427,22 +427,6 @@ $conn->close();
 
 
 
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const userDropdownToggle = document.getElementById("userDropdownToggle");
-      const userDropdown = document.getElementById("userDropdown");
 
-      userDropdownToggle.addEventListener("click", function () {
-        userDropdown.classList.toggle("hidden");
-      });
-
-      // Close dropdown when clicking outside
-      document.addEventListener("click", function (event) {
-        if (!userDropdown.contains(event.target) && !userDropdownToggle.contains(event.target)) {
-          userDropdown.classList.add("hidden");
-        }
-      });
-    });
-  </script>
 </body>
 </html>
