@@ -1,24 +1,30 @@
+
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+?>
+
+
+
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, ['Admin', 'Manager'])): 
+    
+?>
 <?php $currentPage = basename($_SERVER['PHP_SELF']); ?>
 
 <div class="bg-gray-800 px-4 py-3 flex flex-wrap md:flex-nowrap gap-2 text-sm font-medium text-white rounded-b-md overflow-x-auto relative">
 
-    <a href="assignShift.php"
-       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'assignShift.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+    <a href=".php"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
        <i data-lucide="calendar-range" class="w-4 h-4"></i>
-       <span>Assign Shift</span>
+       <span> </span>
     </a>
 
-    <a href="viewShift.php"
-       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'viewShift.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
-       <i data-lucide="calendar" class="w-4 h-4"></i>
-       <span>View Shift</span>
-    </a>
-
-    <a href="reqShift.php"
-       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'reqShift.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
-       <i data-lucide="file-text" class="w-4 h-4"></i>
-       <span>View Request Shift</span>
-    </a>
+ 
+   
 
     <div class="relative inline-block text-left">
         <button id="configBtn" type="button"
@@ -33,21 +39,25 @@
              class="hidden fixed bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 space-y-2 w-48 z-50"
              style="top:0; left:0;">
             <a href="addShift.php"
-               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'addShift.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
-               Add Shift
+               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+                
             </a>
             <a href="reqType.php"
-               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'reqType.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
-               Request Type
+               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+                
             </a>
             <a href="statusType.php"
-               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'statusType.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
-               Status Type
+               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
             </a>
         </div>
     </div>
 
 </div>
+<?php 
+else: 
+  
+endif; 
+?>
 
 <script>
 const btn = document.getElementById("configBtn");

@@ -1,4 +1,6 @@
 
+
+
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -32,7 +34,7 @@ ini_set('display_errors', 1);
     <div class="flex-1 flex flex-col overflow-y-auto">
 
       <!-- Main Top Header (inside content) -->
-      <main class="p-6">
+      <main class="p-6 space-y-4">
         <!-- Header -->
         <div class="flex items-center justify-between border-b py-6">
           <!-- Left: Title -->
@@ -43,10 +45,15 @@ ini_set('display_errors', 1);
 <?php include '../profile.php'; ?>
 
         </div>
+<!-- Second Header: Submodules -->
 
 
 <?php 
-include 'shiftnavbar.php'; 
+include 'shiftnavbar.php'; ?>
+<div class="bg-white shadow-md rounded-2xl p-10 w-full mx-auto mt-10 mb-10">
+    <h2 class="text-2xl font-bold mb-6">Assign Shift Schedule</h2>
+
+<?php 
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -54,7 +61,7 @@ ini_set('display_errors', 1);
 // DB Connections
 include __DIR__ . '/../dbconnection/dbEmployee.php';
 $empConn = $conn;
-include __DIR__ . '/../dbconnection/dbShift.php';
+include __DIR__ . '/../dbconnection/mainDB.php';
 $shiftConn = $conn;
 
 // Step 1: Departments
@@ -151,6 +158,17 @@ select { padding:5px; width:100%; }
 </style>
 
 <h2 class="text-2xl font-bold mb-6">Role-Based Shift Scheduling</h2>
+<?php if($selected_role && $employees->num_rows > 0): ?>
+    <form method="GET" action="pdfreport.php" target="_blank">
+        <input type="hidden" name="department" value="<?= $selected_department ?>">
+        <input type="hidden" name="role" value="<?= $selected_role ?>">
+        <input type="hidden" name="week_start" value="<?= $week_start_input ?: date('Y-m-d', strtotime('monday this week')) ?>">
+        <button type="submit"
+            class="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
+            View PDF Report
+        </button>
+    </form>
+<?php endif; ?>
 
 <!-- Department -->
 <form method="GET" class="mb-4">
@@ -358,3 +376,5 @@ function saveNote(){
   </script>
 </body>
 </html>
+
+

@@ -49,6 +49,9 @@ ini_set('display_errors', 1);
 
 <?php 
 include 'shiftnavbar.php'; ?>
+
+
+
 <div class="bg-white shadow-md rounded-2xl p-10 w-full mx-auto mt-10 mb-10">
     <h2 class="text-2xl font-bold mb-6">Employee Shift Schedule</h2>
 
@@ -58,7 +61,7 @@ include __DIR__ . '/../dbconnection/dbEmployee.php';
 $empConn = $conn; // Employee DB connection
 
 // Include shift DB connection
-include __DIR__ . '/../dbconnection/dbShift.php';
+include __DIR__ . '/../dbconnection/mainDB.php';
 $shiftConn = $conn; // Shift DB connection
 
 // Capture filters
@@ -114,6 +117,72 @@ $result = $shiftConn->query($sql);
     </div>
 </form>
 
+<?php
+// Include employee DB connection
+include __DIR__ . '/../dbconnection/dbEmployee.php';
+$empConn = $conn; // Employee DB connection
+
+// Include shift DB connection
+include __DIR__ . '/../dbconnection/mainDB.php';
+$shiftConn = $conn; // Shift DB connection
+
+// Capture filters
+$filter_date    = $_GET['filter_date']    ?? '';
+$filter_emp     = $_GET['filter_emp']     ?? '';
+$filter_shift   = $_GET['filter_shift']   ?? '';
+$filter_status  = $_GET['filter_status']  ?? '';
+$filter_notes   = $_GET['filter_notes']   ?? '';
+
+// Pagination
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+$records_per_page = 15;
+$offset = ($page - 1) * $records_per_page;
+
+// Count total records for pagination
+$countSql = "
+    SELECT COUNT(*) AS total
+    FROM employee_schedules es
+    JOIN hr3_system.employees e ON es.employee_id = e.employee_id
+    JOIN shifts s ON es.shift_id = s.shift_id
+    WHERE 1=1
+";
+if ($filter_date)   $countSql .= " AND es.work_date = '" . $shiftConn->real_escape_string($filter_date) . "'";
+if ($filter_emp)    $countSql .= " AND (e.first_name LIKE '%" . $shiftConn->real_escape_string($filter_emp) . "%' 
+                                   OR e.last_name LIKE '%" . $shiftConn->real_escape_string($filter_emp) . "%')";
+if ($filter_shift)  $countSql .= " AND (s.shift_code LIKE '%" . $shiftConn->real_escape_string($filter_shift) . "%' 
+                                   OR s.name LIKE '%" . $shiftConn->real_escape_string($filter_shift) . "%')";
+if ($filter_status) $countSql .= " AND es.status LIKE '%" . $shiftConn->real_escape_string($filter_status) . "%'";
+if ($filter_notes)  $countSql .= " AND es.notes LIKE '%" . $shiftConn->real_escape_string($filter_notes) . "%'";
+
+$total_result = $shiftConn->query($countSql);
+$total_row = $total_result->fetch_assoc();
+$total_records = $total_row['total'];
+$total_pages = ceil($total_records / $records_per_page);
+
+// Fetch filtered rows with pagination
+$sql = "
+    SELECT es.schedule_id, es.work_date, es.status, es.notes,
+           e.first_name, e.last_name,
+           s.shift_code, s.name AS shift_name, s.start_time, s.end_time
+    FROM employee_schedules es
+    JOIN hr3_system.employees e ON es.employee_id = e.employee_id
+    JOIN shifts s ON es.shift_id = s.shift_id
+    WHERE 1=1
+";
+if ($filter_date)   $sql .= " AND es.work_date = '" . $shiftConn->real_escape_string($filter_date) . "'";
+if ($filter_emp)    $sql .= " AND (e.first_name LIKE '%" . $shiftConn->real_escape_string($filter_emp) . "%' 
+                              OR e.last_name LIKE '%" . $shiftConn->real_escape_string($filter_emp) . "%')";
+if ($filter_shift)  $sql .= " AND (s.shift_code LIKE '%" . $shiftConn->real_escape_string($filter_shift) . "%' 
+                              OR s.name LIKE '%" . $shiftConn->real_escape_string($filter_shift) . "%')";
+if ($filter_status) $sql .= " AND es.status LIKE '%" . $shiftConn->real_escape_string($filter_status) . "%'";
+if ($filter_notes)  $sql .= " AND es.notes LIKE '%" . $shiftConn->real_escape_string($filter_notes) . "%'";
+
+$sql .= " ORDER BY es.work_date DESC, e.first_name
+          LIMIT $records_per_page OFFSET $offset";
+
+$result = $shiftConn->query($sql);
+?>
+
 <!-- Schedule Table -->
 <table class="w-full border">
     <thead class="bg-gray-100">
@@ -135,10 +204,7 @@ $result = $shiftConn->query($sql);
                     <td class="p-2 border"><?php echo htmlspecialchars($row['shift_code'] . " - " . $row['shift_name']); ?></td>
                     <td class="p-2 border"><?php echo substr($row['start_time'],0,5) . " - " . substr($row['end_time'],0,5); ?></td>
                     <td class="p-2 border"><?php echo htmlspecialchars($row['status']); ?></td>
-                 <td class="p-2 border">
-    <?= htmlspecialchars($row['notes'] ?? "No notes") ?>
-</td>
-
+                    <td class="p-2 border"><?= htmlspecialchars($row['notes'] ?? "No notes") ?></td>
                 </tr>
             <?php endwhile; ?>
         <?php else: ?>
@@ -148,7 +214,24 @@ $result = $shiftConn->query($sql);
         <?php endif; ?>
     </tbody>
 </table>
+
+<!-- Pagination -->
+<div class="mt-4 flex justify-center space-x-2">
+    <?php if($page > 1): ?>
+        <a href="?page=<?php echo $page-1; ?>&filter_date=<?php echo urlencode($filter_date); ?>&filter_emp=<?php echo urlencode($filter_emp); ?>&filter_shift=<?php echo urlencode($filter_shift); ?>&filter_status=<?php echo urlencode($filter_status); ?>&filter_notes=<?php echo urlencode($filter_notes); ?>" class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">Prev</a>
+    <?php endif; ?>
+
+    <?php for($i = 1; $i <= $total_pages; $i++): ?>
+        <a href="?page=<?php echo $i; ?>&filter_date=<?php echo urlencode($filter_date); ?>&filter_emp=<?php echo urlencode($filter_emp); ?>&filter_shift=<?php echo urlencode($filter_shift); ?>&filter_status=<?php echo urlencode($filter_status); ?>&filter_notes=<?php echo urlencode($filter_notes); ?>" class="px-3 py-1 rounded <?php echo ($i == $page) ? 'bg-gray-700 text-white' : 'bg-gray-200 hover:bg-gray-300'; ?>">
+            <?php echo $i; ?>
+        </a>
+    <?php endfor; ?>
+
+    <?php if($page < $total_pages): ?>
+        <a href="?page=<?php echo $page+1; ?>&filter_date=<?php echo urlencode($filter_date); ?>&filter_emp=<?php echo urlencode($filter_emp); ?>&filter_shift=<?php echo urlencode($filter_shift); ?>&filter_status=<?php echo urlencode($filter_status); ?>&filter_notes=<?php echo urlencode($filter_notes); ?>" class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">Next</a>
+    <?php endif; ?>
 </div>
+
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {

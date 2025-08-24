@@ -55,7 +55,7 @@ include 'shiftnavbar.php';
     <h2 class="text-2xl font-bold mb-6">Manage Shifts (Add/Edit/Delete)</h2>
 
 <?php
-include __DIR__ . '/../dbconnection/dbShift.php';
+include __DIR__ . '/../dbconnection/mainDB.php';
 $shiftConn = $conn;
 
 // --- HANDLE ADD/EDIT/DELETE ---

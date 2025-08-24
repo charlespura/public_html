@@ -170,19 +170,21 @@ $statuses = $conn->query("SELECT status_id, name FROM employee_statuses ORDER BY
                 <label>Personal Email</label>
                 <input type="email" name="personal_email" placeholder="john@example.com" class="border rounded w-full p-2">
             </div>
-           <div>
+<div>
   <label>Phone</label>
   <input 
-    type="number" 
+    type="tel" 
     name="phone" 
     placeholder="09171234567" 
     class="border rounded w-full p-2" 
-    pattern="\d{11}" 
+    pattern="[0-9]{11}" 
     maxlength="11" 
     title="Please enter exactly 11 digits" 
     inputmode="numeric"
+    required
   >
 </div>
+
 
         </div>
     </fieldset>

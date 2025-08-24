@@ -3,6 +3,20 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
 
+
+<?php
+session_start(); // Must be first
+
+// Make sure user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: /index.php"); // redirect to login
+    exit;
+}
+
+// No role restriction here — all users can access
+$roles = $_SESSION['roles'] ?? 'Employee'; // store role for sidebar
+?>
+
 <!-- HTML content here -->
 
 <!DOCTYPE html>
@@ -12,7 +26,7 @@ ini_set('display_errors', 1);
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sidebar</title>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="icon" type="image/png" href="../picture/logo2.png" />
+  <link rel="icon" type="image/png" href="picture/logo2.png" />
   
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -75,20 +89,24 @@ ini_set('display_errors', 1);
         $currentPage = $_SERVER['PHP_SELF'];
       ?>
 
-      <a href="/employee/employee.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/employee/employee.php') ? 'bg-gray-700 text-white' : ''; ?>">
-        <i data-lucide="home" class="w-5 h-5"></i>
-        <span class="sidebar-text">Employee</span>
-      </a>
+<!-- Only show Employee page link for Admin or Manager -->
+<?php if ($roles !== 'Employee'): ?>
+<a href="/employee/employee.php"
+   class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/employee/employee.php') ? 'bg-gray-700 text-white' : ''; ?>">
+  <i data-lucide="home" class="w-5 h-5"></i>
+  <span class="sidebar-text">Employee</span>
+</a>
+<?php endif; ?>
 
-      <a href="/index.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/index.php') ? 'bg-gray-700 text-white' : ''; ?>">
+
+      <a href="/dashboard.php"
+         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/dashboard.php') ? 'bg-gray-700 text-white' : ''; ?>">
         <i data-lucide="home" class="w-5 h-5"></i>
         <span class="sidebar-text">Dashboard</span>
       </a>
 
       <a href="/timeAndattendance/time.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/timeAndattendance/time.php') ? 'bg-gray-700 text-white' : ''; ?>">
+         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'public_html/timeAndattendance/time.php') ? 'bg-gray-700 text-white' : ''; ?>">
         <i data-lucide="clock" class="w-5 h-5"></i>
         <span class="sidebar-text">Time and Attendance</span>
       </a>
@@ -116,6 +134,14 @@ ini_set('display_errors', 1);
         <i data-lucide="dollar-sign" class="w-5 h-5"></i>
         <span class="sidebar-text">Claims & Reimbursement</span>
       </a>
+
+        <a href="/user/createUser.php"
+         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/user/createUser.php') ? 'bg-gray-700 text-white' : ''; ?>">
+        <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+        <span class="sidebar-text"> User Management</span>
+      </a>
+
+   
     </nav>
   </div>
 

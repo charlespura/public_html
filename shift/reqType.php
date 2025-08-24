@@ -49,7 +49,7 @@ ini_set('display_errors', 1);
 include 'shiftnavbar.php';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-include __DIR__ . '/../dbconnection/dbShift.php';
+include __DIR__ . '/../dbconnection/mainDB.php';
 $shiftConn = $conn;
 
 // Handle form submissions
