@@ -16,22 +16,17 @@ ini_set('display_errors', 1);
     <i data-lucide="chevron-down" class="w-4 h-4 text-gray-600"></i>
   </button>
 
-  <?php $baseURL = '/public_html/user'; ?>
-<!-- Dropdown -->
-<div id="userDropdown" class="absolute right-0 mt-2 w-40 bg-white rounded shadow-lg hidden z-20">
-    <a href="<?= $baseURL ?>/createUser.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-        Profile
-    </a>
-    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-        Settings
-    </a>
-    <a href="<?= $baseURL ?>/logout.php"
-       class="flex items-center gap-3 px-3 py-2 rounded hover:bg-red-600 hover:text-white transition-colors <?php echo ($currentPage == '/logout.php') ? 'bg-red-500 text-white' : 'text-red-500'; ?>">
-        <i data-lucide="log-out" class="w-5 h-5"></i>
-        <span class="sidebar-text"> Logout</span>
-    </a>
-</div>
+  <!-- Dropdown -->
+  <div id="userDropdown" class="absolute right-0 mt-2 w-40 bg-white rounded shadow-lg hidden z-20">
+    <a href="user/createUser.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+     <a href="/logout.php"
+   class="flex items-center gap-3 px-3 py-2 rounded hover:bg-red-600 hover:text-white transition-colors <?php echo ($currentPage == '/logout.php') ? 'bg-red-500 text-white' : 'text-red-500'; ?>">
+    <i data-lucide="log-out" class="w-5 h-5"></i>
+    <span class="sidebar-text"> Logout</span>
+</a>
 
+  </div>
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {

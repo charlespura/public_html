@@ -33,9 +33,7 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// Define base URL
-$baseURL = '/public_html';
-
-// Redirect to login page using base URL
-header("Location: {$baseURL}/index.php");
+// Redirect to login page after logout
+header("Location: index.php");
 exit;
+?>
