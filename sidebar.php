@@ -5,7 +5,10 @@ ini_set('display_errors', 1);
 
 
 <?php
-session_start(); // Must be first
+// Start session only if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start(); // Must be first
+}
 
 // Make sure user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -13,8 +16,16 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// No role restriction here — all users can access
-$roles = $_SESSION['roles'] ?? 'Employee'; // store role for sidebar
+// Get user info from session safely
+$roles = $_SESSION['roles'] ?? 'Employee';          // role for sidebar
+$loggedInUserId = $_SESSION['employee_id'] ?? null; // employee UUID
+$loggedInUserName = $_SESSION['user_name'] ?? 'Guest'; // display name
+
+// Optional: redirect if employee_id is missing
+if (!$loggedInUserId) {
+    header("Location: ../index.php"); // ensure approver session exists
+    exit;
+}
 ?>
 
 <!-- HTML content here -->
@@ -139,7 +150,7 @@ $currentPage = $_SERVER['PHP_SELF']; // e.g. /public_html/dashboard.php
     <span class="sidebar-text">Timesheet</span>
   </a>
 
-  <a href="/public_html/leave/leave.php"
+  <a href="/public_html/leave/assignLeave.php"
      class="flex items-center gap-3 px-3 py-2 rounded 
      <?php echo ($currentPage == '/public_html/leave/leave.php') 
               ? 'bg-gray-700 text-white font-semibold' 

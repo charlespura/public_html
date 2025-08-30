@@ -1,11 +1,10 @@
-
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
+
 <?php
 session_start();
-
 include __DIR__ . '/dbconnection/mainDb.php';
 
 $errors = [];
@@ -15,16 +14,16 @@ $password = $_POST['password'] ?? $_GET['password'] ?? '';
 
 if ($username && $password) {
 
-    // Join users → user_roles → roles
+    // Get user from DB
     $stmt = $conn->prepare("
-        SELECT u.user_id, u.username, u.password_hash, u.is_active, r.name AS role_name
+        SELECT u.user_id, u.username, u.email, u.password_hash, u.is_active, u.is_verified, r.name AS role_name, e.employee_id, e.first_name, e.last_name
         FROM users u
         LEFT JOIN user_roles ur ON u.user_id = ur.user_id
         LEFT JOIN roles r ON ur.role_id = r.role_id
+        LEFT JOIN hr3_system.employees e ON e.user_id = u.user_id
         WHERE u.username = ? OR u.email = ?
         LIMIT 1
     ");
-
     $stmt->bind_param("ss", $username, $username);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -35,17 +34,99 @@ if ($username && $password) {
         if (!$user['is_active']) {
             $errors[] = "Account is inactive.";
         } elseif (password_verify($password, $user['password_hash'])) {
-            $_SESSION['user_id'] = $user['user_id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['roles'] = $user['role_name'] ?? 'Employee'; // default role
 
-            // Update last login
-            $updateStmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
-            $updateStmt->bind_param("s", $user['user_id']);
-            $updateStmt->execute();
+            // 🔹 Step 1: Sign in with Firebase
+            $apiKey = "AIzaSyCQg9yf_oWKyDAE_WApgRnG3q-BEDL6bSc"; 
+            $url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$apiKey";
 
-            header("Location: timesheet/dashboard.php");
-            exit;
+            $payload = json_encode([
+                "email" => $user['email'],
+                "password" => $password,
+                "returnSecureToken" => true
+            ]);
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            $response = curl_exec($ch);
+            curl_close($ch);
+
+            $firebaseData = json_decode($response, true);
+
+            if (isset($firebaseData['error'])) {
+                $errors[] = "Firebase error: " . $firebaseData['error']['message'];
+            } else {
+                $idToken = $firebaseData['idToken'];
+
+                // 🔹 Step 2: Lookup account details
+                $url = "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=$apiKey";
+                $payload = json_encode(["idToken" => $idToken]);
+
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+                $response = curl_exec($ch);
+                curl_close($ch);
+
+                $lookup = json_decode($response, true);
+
+                if (isset($lookup['users'][0]['emailVerified']) && $lookup['users'][0]['emailVerified']) {
+                    // ✅ Verified
+                    if ($user['is_verified'] == 0) {
+                        $updateStmt = $conn->prepare("UPDATE users SET is_verified = 1 WHERE user_id = ?");
+                        $updateStmt->bind_param("s", $user['user_id']);
+                        $updateStmt->execute();
+                    }
+
+                    // ✅ Login success
+                    $_SESSION['user_id'] = $user['user_id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['roles'] = $user['role_name'] ?? 'Employee';
+
+                    // ===== ADDITION: Store employee UUID and name for leave approval =====
+                    $_SESSION['employee_id'] = $user['employee_id']; // from hr3_system.employees
+                    $_SESSION['user_name'] = $user['first_name'].' '.$user['last_name'];
+
+                    $updateStmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
+                    $updateStmt->bind_param("s", $user['user_id']);
+                    $updateStmt->execute();
+
+                    header("Location: timesheet/dashboard.php");
+                    exit;
+
+                } else {
+                    // ❌ Not verified → Resend verification email
+                    $url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=$apiKey";
+                    $payload = json_encode([
+                        "requestType" => "VERIFY_EMAIL",
+                        "idToken" => $idToken
+                    ]);
+
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+                    $response = curl_exec($ch);
+                    curl_close($ch);
+
+                    $resendResult = json_decode($response, true);
+
+                    if (isset($resendResult['error'])) {
+                        $errors[] = "Please verify your email before logging in. (Error resending verification: " . $resendResult['error']['message'] . ")";
+                    } else {
+                        $errors[] = "Please verify your email before logging in. ✅ A new verification link has been sent to " . $user['email'];
+                    }
+                }
+            }
+
         } else {
             $errors[] = "Incorrect password.";
         }

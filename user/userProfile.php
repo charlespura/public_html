@@ -268,10 +268,30 @@ document.getElementById('closeImagePreview').addEventListener('click', function(
 </div>
 
 
-        <div>
-          <label class="block">Phone</label>
-          <input type="text" name="phone" id="edit_phone" class="w-full border p-2 rounded">
-        </div>
+      <div>
+  <label class="block">Phone</label>
+  <input 
+    type="tel" 
+    name="phone" 
+    id="edit_phone" 
+    class="w-full border p-2 rounded" 
+    maxlength="11" 
+    placeholder="09XXXXXXXXX" 
+    required
+  >
+</div>
+
+<script>
+document.getElementById("edit_phone").addEventListener("input", function() {
+  // Remove all non-numeric characters
+  this.value = this.value.replace(/\D/g, "");
+  // Limit to 11 digits
+  if (this.value.length > 11) {
+    this.value = this.value.slice(0, 11);
+  }
+});
+</script>
+
         <div>
           <label class="block">Address</label>
           <textarea name="address" id="edit_address" class="w-full border p-2 rounded"></textarea>

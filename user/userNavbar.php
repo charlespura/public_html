@@ -21,10 +21,7 @@
              class="hidden absolute mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg w-48 z-50">
             <a href="roleType.php"
                class="block px-3 py-2 rounded hover:bg-gray-700 text-white">Role Type</a>
-            <a href="userProfile.php"
-               class="block px-3 py-2 rounded hover:bg-gray-700 text-white">User Profile</a>
-            <a href="permissions.php"
-               class="block px-3 py-2 rounded hover:bg-gray-700 text-white">Permissions</a>
+        
         </div>
     </div>
 </div>

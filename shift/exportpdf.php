@@ -82,7 +82,7 @@ $html = '<div style="text-align:center; margin-bottom:20px;">
     <h2>ATIÉRA Hotel and Restaurant</h2>
     <h3>Shift Report</h3>
     <p>Department: ' . htmlspecialchars($department_name) . '</p>
-    <p>Role: ' . htmlspecialchars($role_name) . '</p>
+    <p>Position: ' . htmlspecialchars($role_name) . '</p>
     <p>Week Starting: ' . date('m/d/Y', strtotime($week_start_input)) . '</p>
 </div>';
 

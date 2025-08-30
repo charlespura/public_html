@@ -117,7 +117,7 @@ if ($selected_role) {
     <h2 class="text-2xl font-bold mt-2">ATIÉRA Hotel and Restaurant</h2>
     <p class="mt-1 font-semibold">Shift Report</p>
     <p class="mt-1"><strong>Department:</strong> <?= htmlspecialchars($department_name) ?></p>
-    <p><strong>Role:</strong> <?= htmlspecialchars($role_name) ?></p>
+    <p><strong>Position:</strong> <?= htmlspecialchars($role_name) ?></p>
     <p class="mt-1"><strong>Week Starting:</strong> <?= date('m/d/Y', strtotime($week_start_input)) ?></p>
 </div>
 

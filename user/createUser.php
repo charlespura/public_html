@@ -4,6 +4,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
+
 <?php
 // Enable MySQLi exceptions instead of fatal errors
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -21,10 +22,10 @@ $messageType = ''; // success / error
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $employee_id = $_POST['employee_id'];
-    $username = $_POST['username'];
-    $email = $_POST['email'];
-    $password = $_POST['password'];
-    $role_id = $_POST['role_id'];
+    $username    = $_POST['username'];
+    $email       = $_POST['email'];
+    $password    = $_POST['password'];
+    $role_id     = $_POST['role_id'];
 
     $user_id = uniqid();
     $password_hash = password_hash($password, PASSWORD_BCRYPT);
@@ -45,13 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // Insert into users
-        $stmt = $mainConn->prepare("
-            INSERT INTO users (user_id, username, email, password_hash, reference_image, is_active)
-            VALUES (?, ?, ?, ?, ?, 1)
-        ");
-        $stmt->bind_param("sssss", $user_id, $username, $email, $password_hash, $reference_image);
-        $stmt->execute();
+        // Insert into MySQL users
+      $stmt = $mainConn->prepare("
+    INSERT INTO users (user_id, username, email, password_hash, reference_image, is_active, is_verified)
+    VALUES (?, ?, ?, ?, ?, 1, 0)
+");
+$stmt->bind_param("sssss", $user_id, $username, $email, $password_hash, $reference_image);
+$stmt->execute();
+
 
         // Insert into user_profiles
         $stmt = $mainConn->prepare("
@@ -77,18 +79,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("ss", $user_id, $employee_id);
         $stmt->execute();
 
-        $message = "✅ User account created successfully for employee!";
+        // ✅ At this point, MySQL insertion is complete.
+        // We’ll let Firebase handle Auth + email verification via JS (below).
+        $message = "✅ User account created successfully in MySQL. Firebase Auth pending verification.";
         $messageType = 'success';
 
     } catch (mysqli_sql_exception $e) {
-        // Catch any MySQL error (e.g., duplicate username)
         $message = "❌ Error: " . $e->getMessage();
         $messageType = 'error';
     }
 }
 ?>
-
-
 
 
 
@@ -415,6 +416,51 @@ cropBtn.addEventListener('click', () => {
     Create Account
   </button>
 </div>
+
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } 
+    from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCQg9yf_oWKyDAE_WApgRnG3q-BEDL6bSc",
+    authDomain: "hr3login.firebaseapp.com",
+    projectId: "hr3login",
+    storageBucket: "hr3login.firebasestorage.app",
+    messagingSenderId: "232802988174",
+    appId: "1:232802988174:web:6baa6ef4d5eed11b9b99df",
+    measurementId: "G-VRP7EYSBZX"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  document.querySelector("form").addEventListener("submit", async (e) => {
+    e.preventDefault(); // stop default submit
+    const form = e.target;
+
+    const email = form.email.value;
+    const password = form.password.value;
+
+    try {
+      // ✅ Create Firebase Auth account
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // ✅ Send email verification
+      await sendEmailVerification(user);
+
+      alert("Firebase account created. Verification email sent!");
+
+      // ✅ After Firebase, submit form to PHP (MySQL insertion)
+      form.submit();
+
+    } catch (error) {
+      alert("Firebase Auth Error: " + error.message);
+    }
+  });
+</script>
 
 
 <script>

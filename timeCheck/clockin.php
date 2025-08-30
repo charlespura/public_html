@@ -90,6 +90,12 @@ session_start();
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
+    <!-- Real-time clock and date display -->
+    <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-8 w-full max-w-md text-center shadow-lg">
+        <div id="clock" class="text-6xl font-bold text-gray-800 mb-2"></div>
+        <div id="date" class="text-2xl text-gray-600"></div>
+    </div>
+
     <div class="card bg-white p-8 rounded-2xl w-full max-w-md text-center fade-in">
         <!-- Logo -->
         <div class="mb-6 flex justify-center">
@@ -171,6 +177,43 @@ session_start();
         input.value = canvas.toDataURL('image/jpeg');
         form.submit();
     });
+    </script>
+    
+    <script>
+    // Real-time clock and date functionality
+    function updateClock() {
+        const now = new Date();
+        
+        // Format time
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        const timeString = `${hours}:${minutes}:${seconds}`;
+        
+        // Format date
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        const day = days[now.getDay()];
+        const date = now.getDate();
+        const month = months[now.getMonth()];
+        const year = now.getFullYear();
+        
+        // Add ordinal suffix to date
+        const suffix = (date === 1 || date === 21 || date === 31) ? 'st' : 
+                      (date === 2 || date === 22) ? 'nd' : 
+                      (date === 3 || date === 23) ? 'rd' : 'th';
+        
+        const dateString = `${day}, ${month} ${date}${suffix}, ${year}`;
+        
+        // Update DOM
+        document.getElementById('clock').textContent = timeString;
+        document.getElementById('date').textContent = dateString;
+    }
+    
+    // Initial call and set interval
+    updateClock();
+    setInterval(updateClock, 1000);
     </script>
 </body>
 </html>

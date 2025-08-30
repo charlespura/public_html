@@ -50,8 +50,20 @@ ini_set('display_errors', 1);
 
 <?php 
 include 'shiftnavbar.php'; ?>
+
 <div class="bg-white shadow-md rounded-2xl p-10 w-full mx-auto mt-10 mb-10">
-    <h2 class="text-2xl font-bold mb-6">Assign Shift Schedule</h2>
+    <!-- <h2 class="text-2xl font-bold mb-6">Assign Shift Schedule</h2> -->
+
+
+
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, ['Admin', 'Manager'])): 
+?>
+
+
 
 <?php 
 
@@ -143,6 +155,7 @@ if ($selected_role && !empty($days)) {
         $notes[$row['employee_id']][$row['work_date']] = $row['notes'];
     }
 }
+
 ?>
 
 <style>
@@ -159,7 +172,7 @@ select { padding:5px; width:100%; }
 
 <h2 class="text-2xl font-bold mb-6">Role-Based Shift Scheduling</h2>
 <?php if($selected_role && $employees->num_rows > 0): ?>
-    <form method="GET" action="pdfreport.php" target="_blank">
+    <form method="GET" action="pdfreport.php" target="">
         <input type="hidden" name="department" value="<?= $selected_department ?>">
         <input type="hidden" name="role" value="<?= $selected_role ?>">
         <input type="hidden" name="week_start" value="<?= $week_start_input ?: date('Y-m-d', strtotime('monday this week')) ?>">
@@ -188,10 +201,10 @@ select { padding:5px; width:100%; }
 <?php if ($selected_department): ?>
 <form method="GET" class="mb-4">
   <input type="hidden" name="department" value="<?= $selected_department ?>">
-  <label class="block text-sm font-medium text-gray-700 mb-1">Role:</label>
+  <label class="block text-sm font-medium text-gray-700 mb-1">Position:</label>
   <select name="role" onchange="this.form.submit()"
     class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-    <option value="">--Select Role--</option>
+    <option value="">--Select Position--</option>
     <?php while($r=$roles->fetch_assoc()): ?>
       <option value="<?= $r['position_id'] ?>" <?= $selected_role==$r['position_id']?'selected':'' ?>>
         <?= htmlspecialchars($r['title']) ?>
@@ -217,6 +230,33 @@ select { padding:5px; width:100%; }
     Show Week
   </button>
 </form>
+<?php
+// Step: Fetch approved leaves for selected days (from $shiftConn)
+$leaves = [];
+if (!empty($days)) {
+    $dayStart = $days[0];
+    $dayEnd   = end($days);
+    $resLeaves = $shiftConn->query("
+        SELECT employee_id, start_date, end_date, status 
+        FROM leave_requests 
+        WHERE status = 'Approved'
+          AND (
+              (start_date BETWEEN '$dayStart' AND '$dayEnd') 
+              OR (end_date BETWEEN '$dayStart' AND '$dayEnd') 
+              OR ('$dayStart' BETWEEN start_date AND end_date)
+          )
+    ");
+    while ($row = $resLeaves->fetch_assoc()) {
+        $empId = $row['employee_id'];
+        $start = strtotime($row['start_date']);
+        $end   = strtotime($row['end_date']);
+        while ($start <= $end) {
+            $leaves[$empId][date('Y-m-d', $start)] = true;
+            $start = strtotime('+1 day', $start);
+        }
+    }
+}
+?>
 
 <!-- Schedule Table -->
 <?php if($selected_role && $employees->num_rows>0): ?>
@@ -240,17 +280,23 @@ select { padding:5px; width:100%; }
           <?php foreach($days as $day): 
             $shift_id = $schedules[$emp['employee_id']][$day] ?? '';
             $note_text = $notes[$emp['employee_id']][$day] ?? '';
+            $isLeave = isset($leaves[$emp['employee_id']][$day]);
           ?>
           <td class="px-2 py-2 text-center align-middle">
             <div class="flex flex-col items-center gap-1">
               <select data-employee="<?= $emp['employee_id'] ?>" data-date="<?= $day ?>" onchange="saveShift(this)"
-                class="w-full sm:w-auto text-xs sm:text-sm p-1 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="">Off</option>
-                <?php foreach($shiftsArray as $s): ?>
-                  <option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
-                    <?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
-                  </option>
-                <?php endforeach; ?>
+                class="w-full sm:w-auto text-xs sm:text-sm p-1 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                <?= $isLeave ? 'disabled' : '' ?>>
+                <?php if ($isLeave): ?>
+                  <option value="" selected>On Leave</option>
+                <?php else: ?>
+                  <option value="" <?= $shift_id==''?'selected':'' ?>>Off</option>
+                  <?php foreach($shiftsArray as $s): ?>
+                    <option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
+                      <?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
               </select>
               <button type="button" class="text-blue-500 hover:text-blue-700 text-lg"
                 onclick="openNoteModal('<?= $emp['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">
@@ -267,6 +313,7 @@ select { padding:5px; width:100%; }
 <?php elseif($selected_role): ?>
 <p class="text-gray-600 italic">No employees found for this role.</p>
 <?php endif; ?>
+
 
 
 <!-- Note Modal -->
@@ -319,43 +366,245 @@ function closeNoteModal(){
     const modal = document.getElementById('noteModal');
     modal.classList.remove('show');
 }
+
 function saveNote(){
     const note = document.getElementById('noteText').value;
 
-    fetch('save_note.php',{
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:new URLSearchParams({
+    fetch('save_note.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
             employee_id: currentEmployee,
             work_date: currentDate,
             notes: note
         })
     })
-    .then(res => res.text())   // ✅ get raw HTML
-    .then(html => {
+    .then(res => res.json())   // ✅ parse JSON instead of text
+    .then(data => {
         const modal = document.getElementById('noteModal');
         const content = modal.querySelector('.modal-content');
 
-        // Insert success/error message
+        // Create feedback message
         const messageDiv = document.createElement('div');
-        messageDiv.innerHTML = html;
+        messageDiv.className = (data.status === "success") 
+            ? "bg-green-100 text-green-700 p-2 rounded mt-2 text-sm"
+            : "bg-red-100 text-red-700 p-2 rounded mt-2 text-sm";
+        messageDiv.textContent = data.message;
+
         content.appendChild(messageDiv);
 
-        // ⏳ Remove message after 3 seconds, then close modal
+        // ⏳ Remove message after 2s, then close modal
         setTimeout(() => {
             messageDiv.remove();
-            closeNoteModal();
-        }, 3000);
+            if (data.status === "success") {
+                closeNoteModal();
+            }
+        }, 2000);
     })
-    .catch(err=>{
-        alert("Error saving note");
+    .catch(err => {
+        alert("❌ Error saving note: " + err);
         closeNoteModal();
     });
 }
 
-
 </script>
 
+        <?php 
+else: 
+  
+endif; 
+?>
+
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, [ 'Employee'])): 
+?>
+
+
+<?php 
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Make sure user is logged in
+if (!isset($_SESSION['employee_id'])) {
+    header("Location: ../index.php");
+    exit;
+}
+
+// Logged-in employee info
+$loggedInUserId = $_SESSION['employee_id'];
+$loggedInUserName = $_SESSION['user_name'] ?? 'Guest';
+$view = $_GET['view'] ?? 'week';
+$week_start_input = $_GET['week_start'] ?? '';
+
+// DB Connections
+include __DIR__ . '/../dbconnection/dbEmployee.php';
+$empConn = $conn;
+include __DIR__ . '/../dbconnection/mainDB.php';
+$shiftConn = $conn;
+
+// Step 1: Shifts
+$shiftsArray = [];
+$shiftsResult = $shiftConn->query("SELECT shift_id, shift_code, start_time, end_time FROM shifts ORDER BY start_time");
+while($row = $shiftsResult->fetch_assoc()){
+    $shiftsArray[$row['shift_id']] = $row;
+}
+
+// Step 2: Determine days to show
+if ($view === 'month') {
+    $year  = $_GET['year'] ?? date('Y');
+    $month = $_GET['month'] ?? date('m');
+    $month_start = date('Y-m-01', strtotime("$year-$month-01"));
+    $month_end   = date('Y-m-t', strtotime($month_start));
+    $days = [];
+    $period = new DatePeriod(new DateTime($month_start), new DateInterval('P1D'), (new DateTime($month_end))->modify('+1 day'));
+    foreach ($period as $dt) { $days[] = $dt->format('Y-m-d'); }
+} else {
+    $week_start = $week_start_input ? date('Y-m-d', strtotime($week_start_input)) : date('Y-m-d', strtotime('monday this week'));
+    $week_end = date('Y-m-d', strtotime("$week_start +6 days"));
+
+    $days = [];
+    for($i=0;$i<7;$i++){ 
+        $days[] = date('Y-m-d', strtotime("$week_start +$i days")); 
+    }
+}
+
+// Step 3: Employee info (only logged-in employee)
+$employeeRes = $empConn->query("
+    SELECT employee_id, CONCAT(first_name,' ',last_name) AS fullname 
+    FROM employees 
+    WHERE employee_id = '{$loggedInUserId}'
+");
+$employee = $employeeRes->fetch_assoc();
+
+// Step 4: Existing schedules and notes
+$schedules = [];
+$notes = [];
+if (!empty($days)) {
+    $dayStart = $days[0];
+    $dayEnd   = end($days);
+    $res = $shiftConn->query("
+        SELECT employee_id, shift_id, work_date, notes 
+        FROM employee_schedules 
+        WHERE employee_id = '{$loggedInUserId}'
+          AND work_date BETWEEN '$dayStart' AND '$dayEnd'
+    ");
+    while($row = $res->fetch_assoc()){
+        $schedules[$row['employee_id']][$row['work_date']] = $row['shift_id'];
+        $notes[$row['employee_id']][$row['work_date']] = $row['notes'];
+    }
+}
+
+// Step 5: Approved leaves
+$leaves = [];
+$resLeaves = $shiftConn->query("
+    SELECT employee_id, start_date, end_date, status
+    FROM leave_requests
+    WHERE employee_id = '{$loggedInUserId}'
+      AND status = 'Approved'
+      AND (
+          (start_date BETWEEN '$dayStart' AND '$dayEnd') 
+          OR (end_date BETWEEN '$dayStart' AND '$dayEnd') 
+          OR ('$dayStart' BETWEEN start_date AND end_date)
+      )
+");
+while($row = $resLeaves->fetch_assoc()){
+    $start = strtotime($row['start_date']);
+    $end = strtotime($row['end_date']);
+    while($start <= $end){
+        $leaves[$row['employee_id']][date('Y-m-d',$start)] = true;
+        $start = strtotime('+1 day',$start);
+    }
+}
+?>
+
+<?php if($employee): ?>
+<div class="overflow-x-auto bg-white shadow rounded-lg">
+  <table class="min-w-full border-collapse">
+    <thead>
+      <tr class="bg-gray-100 text-sm">
+        <th class="px-4 py-2 text-left font-semibold">Employee</th>
+        <?php foreach($days as $day): ?>
+          <th class="px-4 py-2 text-center font-semibold">
+            <?= date('D', strtotime($day)) ?><br>
+            <span class="text-xs text-gray-500"><?= date('m/d', strtotime($day)) ?></span>
+          </th>
+        <?php endforeach; ?>
+      </tr>
+    </thead>
+    <tbody class="text-sm divide-y">
+      <tr>
+        <td class="px-4 py-2 font-medium whitespace-nowrap"><?= htmlspecialchars($employee['fullname']) ?></td>
+        <?php foreach($days as $day): 
+            $shift_id = $schedules[$employee['employee_id']][$day] ?? '';
+            $note_text = $notes[$employee['employee_id']][$day] ?? '';
+            $isLeave = isset($leaves[$employee['employee_id']][$day]);
+        ?>
+        <td class="px-2 py-2 text-center align-middle">
+          <div class="flex flex-col items-center gap-1">
+            <select class="w-full sm:w-auto text-xs sm:text-sm p-1 border rounded-lg focus:ring-2 focus:ring-blue-500" disabled>
+                <?php if($isLeave): ?>
+                    <option selected>On Leave</option>
+                <?php else: ?>
+                    <option <?= $shift_id==''?'selected':'' ?>>Off</option>
+                    <?php foreach($shiftsArray as $s): ?>
+                        <option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
+                            <?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
+                        </option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+           <button type="button" class="text-blue-500 hover:text-blue-700 text-lg"
+    onclick="openNoteModal('<?= $employee['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">
+    📝
+</button>
+<!-- Modal structure -->
+<div id="noteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-4 w-80 max-w-full">
+    <h2 class="text-lg font-semibold mb-2">Shift Note</h2>
+    <p id="noteContent" class="text-gray-700 whitespace-pre-wrap"></p>
+    <button onclick="closeNoteModal()" class="mt-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Close</button>
+  </div>
+</div>
+<script>function openNoteModal(employeeId, date, note) {
+    const modal = document.getElementById('noteModal');
+    const content = document.getElementById('noteContent');
+
+    content.textContent = note || 'No notes for this shift.';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex'); // use flex to center
+}
+
+function closeNoteModal() {
+    const modal = document.getElementById('noteModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+</script>
+          </div>
+        </td>
+        <?php endforeach; ?>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<?php else: ?>
+<p class="text-gray-600 italic">No schedule found for you.</p>
+<?php endif; ?>
+
+        <?php 
+else: 
+  
+endif; 
+?>
 
 
 </body>

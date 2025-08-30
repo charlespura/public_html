@@ -48,6 +48,16 @@ ini_set('display_errors', 1);
 <div class="px-6 mt-6">
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     
+
+
+
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, ['Admin', 'Manager'])): 
+?>
+
     <!-- Card 1 -->
     <div class="bg-white shadow-lg rounded-2xl p-8 h-64 hover:shadow-2xl transition flex flex-col">
       <!-- Header -->
@@ -66,6 +76,7 @@ ini_set('display_errors', 1);
       </div>
     </div>
 
+
     <!-- Card 2 -->
     <div class="bg-white shadow-lg rounded-2xl p-8 h-64 hover:shadow-2xl transition flex flex-col">
       <div class="flex items-center space-x-3">
@@ -82,6 +93,13 @@ ini_set('display_errors', 1);
       </div>
     </div>
 
+        <?php 
+else: 
+  
+endif; 
+?>
+
+
     <!-- Card 3 -->
 <div class="bg-white shadow-lg rounded-2xl p-8 h-64 hover:shadow-2xl transition flex flex-col">
   <div class="flex items-center space-x-3">
@@ -96,6 +114,13 @@ ini_set('display_errors', 1);
 
   <!-- Content Area with Connected SVGs -->
   <div class="flex-1 flex items-center justify-around text-gray-400">
+
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, ['Admin', 'Manager'])): 
+?>
 
     <!-- Create User -->
     <a href="/public_html/user/createUser.php" class="flex flex-col items-center hover:text-blue-500 transition">
@@ -120,11 +145,60 @@ ini_set('display_errors', 1);
       </svg>
       <span class="text-sm font-medium">Employees</span>
     </a>
+ <?php 
+else: 
+  
+endif; 
+?>
 
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, ['Employee'])): 
+?>
+
+   <!-- Create User -->
+<a href="/public_html/user/createUser.php" class="flex flex-col items-center hover:text-blue-500 transition">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4 0-8 2-8 6h16c0-4-4-6-8-6z" />
+  </svg>
+  <span class="text-sm font-medium">Profile</span>
+</a>
+
+<!-- Assign Shift -->
+<a href="/public_html/shift/assignShift.php" class="flex flex-col items-center hover:text-green-500 transition">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M4 15h16M4 19h16" />
+  </svg>
+  <span class="text-sm font-medium">My Shift</span>
+</a>
+
+<!-- Assign Leave -->
+<a href="/public_html/leave/assignLeave.php" class="flex flex-col items-center hover:text-red-500 transition">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z" />
+  </svg>
+  <span class="text-sm font-medium">Assign Leave</span>
+</a>
+
+<!-- Claims -->
+<a href="/public_html/claims/claims.php" class="flex flex-col items-center hover:text-purple-500 transition">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.105 0-2 .672-2 1.5S10.895 11 12 11s2 .672 2 1.5S13.105 14 12 14m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+  <span class="text-sm font-medium">Claims</span>
+</a>
+
+
+ <?php 
+else: 
+  
+endif; 
+?>
   </div>
 </div>
-
-
+  
     <!-- Card 4 -->
     <div class="bg-white shadow-lg rounded-2xl p-8 h-64 hover:shadow-2xl transition flex flex-col">
       <div class="flex items-center space-x-3">
