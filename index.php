@@ -6,7 +6,7 @@ ini_set('display_errors', 1);
 <?php
 session_start();
 
-include __DIR__ . 'dbconnection/mainDB.php';
+include __DIR__ . '/dbconnection/mainDb.php';
 
 $errors = [];
 
@@ -44,7 +44,7 @@ if ($username && $password) {
             $updateStmt->bind_param("s", $user['user_id']);
             $updateStmt->execute();
 
-            header("Location: dashboard.php");
+            header("Location: timesheet/dashboard.php");
             exit;
         } else {
             $errors[] = "Incorrect password.";
@@ -205,6 +205,13 @@ if ($username && $password) {
 
       <h3 class="text-lg sm:text-xl font-semibold mb-1">Sign in</h3>
       <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Use your administrator credentials to continue.</p>
+<?php if (!empty($errors)): ?>
+  <div class="mb-4 p-3 rounded bg-red-100 border border-red-400 text-red-700">
+    <?php foreach ($errors as $error): ?>
+      <p><?php echo htmlspecialchars($error); ?></p>
+    <?php endforeach; ?>
+  </div>
+<?php endif; ?>
 
       <!-- Inline attempt + info banners -->
       <div id="alert" class="alert alert-error hidden mb-2" role="alert"></div>
@@ -229,7 +236,7 @@ if ($username && $password) {
           </div>
           <div class="field">
             <input id="password" name="password" type="password" autocomplete="current-password" class="input pr-12 peer" placeholder=" " required>
-            <label for="password" class="float-label">••••••••</label>
+            <label for="password" class="float-label">Password</label>
             <div class="icon-right flex items-center gap-1">
               <button type="button" id="togglePw" class="w-9 h-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center" aria-label="Show password" aria-pressed="false" title="Show/Hide password">
                 <svg id="eyeOn" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7Zm0 11a4 4 0 1 1 4-4 4 4 0 0 1-4 4Z" fill="currentColor"/></svg>

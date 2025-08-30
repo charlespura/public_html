@@ -3,20 +3,19 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
 
-<!-----------
 
 <?php
 session_start(); // Must be first
 
 // Make sure user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: /index.php"); // redirect to login
+    header("Location: ../index.php"); // redirect to login
     exit;
 }
 
 // No role restriction here — all users can access
 $roles = $_SESSION['roles'] ?? 'Employee'; // store role for sidebar
-?>-->
+?>
 
 <!-- HTML content here -->
 
@@ -84,66 +83,91 @@ $roles = $_SESSION['roles'] ?? 'Employee'; // store role for sidebar
     
     <?php include 'chatbot.php'; ?>
 
-    <!-- Navigation -->
-    <nav class="flex-1 px-2 py-4 space-y-2">
-      <?php
-        $currentPage = $_SERVER['PHP_SELF'];
-      ?>
+   <!-- Navigation -->
+<?php
+$currentPage = $_SERVER['PHP_SELF']; // e.g. /public_html/dashboard.php
+?>
 
-<!-- Only show Employee page link for Admin or Manager -->
-<?php if ($roles !== 'Employee'): ?>
-<a href="employee.php"
-   class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/employee/employee.php') ? 'bg-gray-700 text-white' : ''; ?>">
-  <i data-lucide="home" class="w-5 h-5"></i>
-  <span class="sidebar-text">Employee</span>
-</a>
-<?php endif; ?>
+<!-- Navigation -->
+<nav class="flex-1 px-2 py-4 space-y-2">
 
+  <!-- Only show Employee page link for Admin or Manager -->
+  <?php if ($roles !== 'Employee'): ?>
+    <a href="/public_html/employee/employee.php"
+       class="flex items-center gap-3 px-3 py-2 rounded 
+       <?php echo ($currentPage == '/public_html/employee/employee.php') 
+                ? 'bg-gray-700 text-white font-semibold' 
+                : 'hover:bg-gray-700'; ?>">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="sidebar-text">Employee</span>
+    </a>
+  <?php endif; ?>
 
-      <a href="/dashboard.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/dashboard.php') ? 'bg-gray-700 text-white' : ''; ?>">
-        <i data-lucide="home" class="w-5 h-5"></i>
-        <span class="sidebar-text">Dashboard</span>
-      </a>
+  <a href="/public_html/timesheet/dashboard.php"
+     class="flex items-center gap-3 px-3 py-2 rounded 
+     <?php echo ($currentPage == '/public_html/dashboard.php') 
+              ? 'bg-gray-700 text-white font-semibold' 
+              : 'hover:bg-gray-700'; ?>">
+    <i data-lucide="home" class="w-5 h-5"></i>
+    <span class="sidebar-text">Dashboard</span>
+  </a>
 
-      <a href="/timeAndattendance/time.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'public_html/timeAndattendance/time.php') ? 'bg-gray-700 text-white' : ''; ?>">
-        <i data-lucide="clock" class="w-5 h-5"></i>
-        <span class="sidebar-text">Time and Attendance</span>
-      </a>
+  <a href="/public_html/timeAndattendance/time.php"
+     class="flex items-center gap-3 px-3 py-2 rounded 
+     <?php echo ($currentPage == '/public_html/timeAndattendance/time.php') 
+              ? 'bg-gray-700 text-white font-semibold' 
+              : 'hover:bg-gray-700'; ?>">
+    <i data-lucide="clock" class="w-5 h-5"></i>
+    <span class="sidebar-text">Time and Attendance</span>
+  </a>
 
-      <a href="/shift/assignShift.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/shift/assignShift.php') ? 'bg-gray-700 text-white' : ''; ?>">
-        <i data-lucide="calendar-range" class="w-5 h-5"></i>
-        <span class="sidebar-text">Shift & Schedule</span>
-      </a>
+  <a href="/public_html/shift/assignShift.php"
+     class="flex items-center gap-3 px-3 py-2 rounded 
+     <?php echo ($currentPage == '/public_html/shift/assignShift.php') 
+              ? 'bg-gray-700 text-white font-semibold' 
+              : 'hover:bg-gray-700'; ?>">
+    <i data-lucide="calendar-range" class="w-5 h-5"></i>
+    <span class="sidebar-text">Shift & Schedule</span>
+  </a>
 
-      <a href="/timesheet/timesheet.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/timesheet/timesheet.php') ? 'bg-gray-700 text-white' : ''; ?>">
-        <i data-lucide="file-text" class="w-5 h-5"></i>
-        <span class="sidebar-text">Timesheet</span>
-      </a>
+  <a href="/public_html/timesheet/timesheet.php"
+     class="flex items-center gap-3 px-3 py-2 rounded 
+     <?php echo ($currentPage == '/public_html/timesheet/timesheet.php') 
+              ? 'bg-gray-700 text-white font-semibold' 
+              : 'hover:bg-gray-700'; ?>">
+    <i data-lucide="file-text" class="w-5 h-5"></i>
+    <span class="sidebar-text">Timesheet</span>
+  </a>
 
-      <a href="/leave/leave.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/leave/leave.php') ? 'bg-gray-700 text-white' : ''; ?>">
-        <i data-lucide="plane" class="w-5 h-5"></i>
-        <span class="sidebar-text">Leave Management</span>
-      </a>
+  <a href="/public_html/leave/leave.php"
+     class="flex items-center gap-3 px-3 py-2 rounded 
+     <?php echo ($currentPage == '/public_html/leave/leave.php') 
+              ? 'bg-gray-700 text-white font-semibold' 
+              : 'hover:bg-gray-700'; ?>">
+    <i data-lucide="plane" class="w-5 h-5"></i>
+    <span class="sidebar-text">Leave Management</span>
+  </a>
 
-      <a href="/claims/claims.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/claims/claims.php') ? 'bg-gray-700 text-white' : ''; ?>">
-        <i data-lucide="dollar-sign" class="w-5 h-5"></i>
-        <span class="sidebar-text">Claims & Reimbursement</span>
-      </a>
+  <a href="/public_html/claims/claims.php"
+     class="flex items-center gap-3 px-3 py-2 rounded 
+     <?php echo ($currentPage == '/public_html/claims/claims.php') 
+              ? 'bg-gray-700 text-white font-semibold' 
+              : 'hover:bg-gray-700'; ?>">
+    <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+    <span class="sidebar-text">Claims & Reimbursement</span>
+  </a>
 
-        <a href="/user/createUser.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == '/user/createUser.php') ? 'bg-gray-700 text-white' : ''; ?>">
-        <i data-lucide="dollar-sign" class="w-5 h-5"></i>
-        <span class="sidebar-text"> User Management</span>
-      </a>
+  <a href="/public_html/user/userProfile.php"
+     class="flex items-center gap-3 px-3 py-2 rounded 
+     <?php echo ($currentPage == '/public_html/user/createUser.php') 
+              ? 'bg-gray-700 text-white font-semibold' 
+              : 'hover:bg-gray-700'; ?>">
+    <i data-lucide="user-plus" class="w-5 h-5"></i>
+    <span class="sidebar-text">User Management</span>
+  </a>
 
-   
-    </nav>
+</nav>
+
   </div>
 
   <!-- Mobile menu overlay -->

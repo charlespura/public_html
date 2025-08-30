@@ -47,10 +47,10 @@ ini_set('display_errors', 1);
 
 
 <!-- Second Header: Submodules -->
-<div class="bg-gray-100 border-b px-6 py-3 flex gap-4 text-sm font-medium text-gray-700">
-  <a href="employee.php" class="hover:text-blue-600 transition-colors"> Employee List</a>
-  <a href="addemployee.php" class="hover:text-blue-600 transition-colors">Add Employee </a>
-</div>
+        
+<?php 
+include 'employeeNavbar.php'; ?>
+
 
         <!-- Page Body -->
         <p class="text-gray-600"></p>

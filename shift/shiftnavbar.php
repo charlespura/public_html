@@ -1,28 +1,26 @@
-<?php $currentPage = basename($_SERVER['PHP_SELF']); ?>
-
 <div class="bg-gray-800 px-4 py-3 flex flex-wrap md:flex-nowrap gap-2 text-sm font-medium text-white rounded-b-md overflow-x-auto relative">
 
     <a href="assignShift.php"
-       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'assignShift.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
        <i data-lucide="calendar-range" class="w-4 h-4"></i>
        <span>Assign Shift</span>
     </a>
 
     <a href="viewShift.php"
-       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'viewShift.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
        <i data-lucide="calendar" class="w-4 h-4"></i>
        <span>View Shift</span>
     </a>
 
     <a href="reqShift.php"
-       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'reqShift.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
        <i data-lucide="file-text" class="w-4 h-4"></i>
        <span>View Request Shift</span>
     </a>
 
     <div class="relative inline-block text-left">
         <button id="configBtn" type="button"
-            class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 <?php echo in_array($currentPage, ['addShift.php','reqType.php','statusType.php']) ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+            class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
             <i data-lucide="settings" class="w-4 h-4"></i>
             <span>Configure</span>
             <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="configArrow"></i>
@@ -33,15 +31,15 @@
              class="hidden fixed bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 space-y-2 w-48 z-50"
              style="top:0; left:0;">
             <a href="addShift.php"
-               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'addShift.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+               class="block px-3 py-2 rounded hover:bg-gray-700 text-white">
                Add Shift
             </a>
             <a href="reqType.php"
-               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'reqType.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+               class="block px-3 py-2 rounded hover:bg-gray-700 text-white">
                Request Type
             </a>
             <a href="statusType.php"
-               class="block px-3 py-2 rounded hover:bg-gray-700 <?php echo ($currentPage == 'statusType.php') ? 'bg-gray-700 text-white' : 'text-white'; ?>">
+               class="block px-3 py-2 rounded hover:bg-gray-700 text-white">
                Status Type
             </a>
         </div>

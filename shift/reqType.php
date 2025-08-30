@@ -4,6 +4,60 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
 
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+include __DIR__ . '/../dbconnection/mainDB.php';
+$shiftConn = $conn;
+
+$message = ""; // message container
+
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action     = $_POST['action'] ?? '';
+    $type_id    = $_POST['type_id'] ?? '';
+    $type_name  = trim($_POST['type_name'] ?? '');
+    $description= $_POST['description'] ?? '';
+    $is_active  = isset($_POST['is_active']) ? 1 : 0;
+
+    try {
+        if ($action === 'add' && $type_name) {
+            $stmt = $shiftConn->prepare("INSERT INTO request_types (type_id, type_name, description, is_active, created_at, updated_at) VALUES (UUID(), ?, ?, ?, NOW(), NOW())");
+            $stmt->bind_param("ssi", $type_name, $description, $is_active);
+            if ($stmt->execute()) {
+                $message = "✅ Request type <b>$type_name</b> added successfully.";
+            }
+        }
+
+        if ($action === 'edit' && $type_id) {
+            $stmt = $shiftConn->prepare("UPDATE request_types SET type_name=?, description=?, is_active=?, updated_at=NOW() WHERE type_id=?");
+            $stmt->bind_param("ssis", $type_name, $description, $is_active, $type_id);
+            if ($stmt->execute()) {
+                $message = "✅ Request type updated successfully.";
+            }
+        }
+
+        if ($action === 'delete' && $type_id) {
+            $stmt = $shiftConn->prepare("DELETE FROM request_types WHERE type_id=?");
+            $stmt->bind_param("s", $type_id);
+            if ($stmt->execute()) {
+                $message = "⚠️ Request type deleted.";
+            }
+        }
+    } catch (mysqli_sql_exception $e) {
+        if ($e->getCode() == 1062) { // duplicate entry
+            $message = "⚠️ A request type with the same name already exists!";
+        } else {
+            $message = "❌ Database error: " . $e->getMessage();
+        }
+    }
+}
+
+// Fetch all request types
+$result = $shiftConn->query("SELECT * FROM request_types ORDER BY created_at DESC");
+?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -43,50 +97,16 @@ ini_set('display_errors', 1);
 <?php include '../profile.php'; ?>
 
         </div>
-
-
-<?php
+        <?php
 include 'shiftnavbar.php';
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-include __DIR__ . '/../dbconnection/mainDB.php';
-$shiftConn = $conn;
-
-// Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-    $type_id = $_POST['type_id'] ?? '';
-    $type_name = $_POST['type_name'] ?? '';
-    $description = $_POST['description'] ?? '';
-    $is_active = isset($_POST['is_active']) ? 1 : 0;
-
-    if ($action === 'add' && $type_name) {
-        $stmt = $shiftConn->prepare("INSERT INTO request_types (type_id, type_name, description, is_active, created_at, updated_at) VALUES (UUID(), ?, ?, ?, NOW(), NOW())");
-        $stmt->bind_param("ssi", $type_name, $description, $is_active);
-        $stmt->execute();
-    }
-
-    if ($action === 'edit' && $type_id) {
-        $stmt = $shiftConn->prepare("UPDATE request_types SET type_name=?, description=?, is_active=?, updated_at=NOW() WHERE type_id=?");
-        $stmt->bind_param("ssis", $type_name, $description, $is_active, $type_id);
-        $stmt->execute();
-    }
-
-    if ($action === 'delete' && $type_id) {
-        $stmt = $shiftConn->prepare("DELETE FROM request_types WHERE type_id=?");
-        $stmt->bind_param("s", $type_id);
-        $stmt->execute();
-    }
-
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
-}
-
-// Fetch all request types
-$result = $shiftConn->query("SELECT * FROM request_types ORDER BY created_at DESC");
 ?>
 <div class="container mx-auto p-6">
     <h2 class="text-2xl font-bold mb-4">Manage Request Types</h2>
+<?php if (!empty($message)): ?>
+    <div style="padding:10px; margin:10px 0; border-radius:6px; background:#f1f5f9; border:1px solid #cbd5e1; color:#1e293b;">
+        <?= $message ?>
+    </div>
+<?php endif; ?>
 
     <!-- Add / Edit Form -->
     <form method="post" class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">

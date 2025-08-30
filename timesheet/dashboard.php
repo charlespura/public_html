@@ -27,7 +27,7 @@ ini_set('display_errors', 1);
   <div class="flex h-full">
 
     <!-- Sidebar -->
-    <?php include 'sidebar.php'; ?>
+    <?php include '../sidebar.php'; ?>
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-y-auto">
@@ -37,8 +37,8 @@ ini_set('display_errors', 1);
         <!-- Header -->
         <div class="flex items-center justify-between border-b py-6">
           <!-- Left: Title -->
-          <h2 class="text-xl font-semibold text-gray-800" id="main-content-title">ano ano</h2>
-<?php include __DIR__ . '/profile.php'; ?>
+          <h2 class="text-xl font-semibold text-gray-800" id="main-content-title">Dashboard</h2>
+<?php include '../profile.php'; ?>
 
         </div>
 
@@ -83,20 +83,47 @@ ini_set('display_errors', 1);
     </div>
 
     <!-- Card 3 -->
-    <div class="bg-white shadow-lg rounded-2xl p-8 h-64 hover:shadow-2xl transition flex flex-col">
-      <div class="flex items-center space-x-3">
-        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" stroke-width="2" 
-             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2h6v2m2 0a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v8a2 2 0 002 2h10z"></path>
-        </svg>
-        <h2 class="text-lg font-semibold text-gray-700">Active Projects</h2>
-      </div>
-      <hr class="my-4">
-      <!-- 👉 Add content for Card 3 here -->
-      <div class="flex-1 flex items-center justify-center text-gray-400">
-        Content area
-      </div>
-    </div>
+<div class="bg-white shadow-lg rounded-2xl p-8 h-64 hover:shadow-2xl transition flex flex-col">
+  <div class="flex items-center space-x-3">
+    <!-- Flash / Quick Icon -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+    <h2 class="text-lg font-semibold text-gray-700">Quick Launch</h2>
+  </div>
+
+  <hr class="my-4">
+
+  <!-- Content Area with Connected SVGs -->
+  <div class="flex-1 flex items-center justify-around text-gray-400">
+
+    <!-- Create User -->
+    <a href="/public_html/user/createUser.php" class="flex flex-col items-center hover:text-blue-500 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4 0-8 2-8 6h16c0-4-4-6-8-6z" />
+      </svg>
+      <span class="text-sm font-medium">Create User</span>
+    </a>
+
+    <!-- Assign Shift -->
+    <a href="/public_html/shift/assignShift.php" class="flex flex-col items-center hover:text-green-500 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M4 15h16M4 19h16" />
+      </svg>
+      <span class="text-sm font-medium">Assign Shift</span>
+    </a>
+
+    <!-- Employees -->
+    <a href="/public_html/employee/employee.php" class="flex flex-col items-center hover:text-purple-500 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+      <span class="text-sm font-medium">Employees</span>
+    </a>
+
+  </div>
+</div>
+
 
     <!-- Card 4 -->
     <div class="bg-white shadow-lg rounded-2xl p-8 h-64 hover:shadow-2xl transition flex flex-col">
