@@ -47,12 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         // Insert into MySQL users
-      $stmt = $mainConn->prepare("
-    INSERT INTO users (user_id, username, email, password_hash, reference_image, is_active, is_verified)
-    VALUES (?, ?, ?, ?, ?, 1, 0)
+ $firebase_uid = $_POST['firebase_uid'] ?? null;
+
+$stmt = $mainConn->prepare("
+    INSERT INTO users (user_id, username, email, password_hash, reference_image, firebase_uid, is_active, is_verified)
+    VALUES (?, ?, ?, ?, ?, ?, 1, 0)
 ");
-$stmt->bind_param("sssss", $user_id, $username, $email, $password_hash, $reference_image);
+$stmt->bind_param("ssssss", $user_id, $username, $email, $password_hash, $reference_image, $firebase_uid);
 $stmt->execute();
+
 
 
         // Insert into user_profiles
@@ -81,7 +84,7 @@ $stmt->execute();
 
         // ✅ At this point, MySQL insertion is complete.
         // We’ll let Firebase handle Auth + email verification via JS (below).
-        $message = "✅ User account created successfully in MySQL. Firebase Auth pending verification.";
+        $message = "✅ User account created successfully. Firebase Auth pending verification.";
         $messageType = 'success';
 
     } catch (mysqli_sql_exception $e) {
@@ -417,7 +420,6 @@ cropBtn.addEventListener('click', () => {
   </button>
 </div>
 
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } 
@@ -451,9 +453,19 @@ cropBtn.addEventListener('click', () => {
       // ✅ Send email verification
       await sendEmailVerification(user);
 
-      alert("Firebase account created. Verification email sent!");
+    //  alert("Firebase account created. Verification email sent!");
 
-      // ✅ After Firebase, submit form to PHP (MySQL insertion)
+      // ✅ Add Firebase UID to hidden input
+      let uidInput = form.querySelector("input[name='firebase_uid']");
+      if (!uidInput) {
+        uidInput = document.createElement("input");
+        uidInput.type = "hidden";
+        uidInput.name = "firebase_uid";
+        form.appendChild(uidInput);
+      }
+      uidInput.value = user.uid;
+
+      // ✅ Submit form to PHP with firebase_uid included
       form.submit();
 
     } catch (error) {

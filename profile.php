@@ -67,6 +67,10 @@ if (!empty($_SESSION['user_id'])) {
          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo ($currentPage == '/user/createUser.php') ? 'bg-gray-700 text-white' : ''; ?>">
           Profile
       </a>
+        <a href="/public_html/user/changePassword.php" 
+         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo ($currentPage == '/user/createUser.php') ? 'bg-gray-700 text-white' : ''; ?>">
+          Change Password
+      </a>
       <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
       <a href="/public_html/logout.php"
          class="flex items-center gap-3 px-3 py-2 rounded hover:bg-red-600 hover:text-white transition-colors <?php echo ($currentPage == '/logout.php') ? 'bg-red-500 text-white' : 'text-red-500'; ?>">

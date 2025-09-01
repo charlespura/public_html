@@ -7,6 +7,7 @@
            <i data-lucide="calendar-range" class="w-4 h-4"></i>
            <span>User Profile</span>
         </a>
+        
     <!-- Dropdown wrapper -->
     <div class="relative inline-block text-left">
         <button id="configBtn" type="button"

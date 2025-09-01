@@ -64,6 +64,209 @@ function imageUrl($fullPath) {
 
 if (in_array($roles, ['Admin', 'Manager'])): 
 ?>
+<?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+date_default_timezone_set('Asia/Manila'); // adjust if needed
+
+// ----------------------------------------------------
+// DB CONNECTIONS
+// ----------------------------------------------------
+include __DIR__ . '/../dbconnection/dbEmployee.php';
+$empConn = $conn; // employees DB
+
+include __DIR__ . '/../dbconnection/mainDB.php';
+$mainConn = $conn; // main DB (users, schedules, shifts, attendance)
+
+// ----------------------------------------------------
+// HELPERS
+// ----------------------------------------------------
+function flash_and_redirect(string $message): void {
+    $_SESSION['flash_message'] = $message;
+   
+}
+
+/**
+ * Get schedule for given employee + date
+ */
+function get_schedule(mysqli $db, string $employee_id, string $work_date): ?array {
+    $sql = "
+        SELECT es.schedule_id, es.work_date, s.shift_id, s.name AS shift_name,
+               s.start_time, s.end_time, s.is_overnight
+        FROM employee_schedules es
+        INNER JOIN shifts s ON es.shift_id = s.shift_id
+        WHERE es.employee_id = ? AND es.work_date = ?
+        LIMIT 1
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->bind_param('ss', $employee_id, $work_date);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($res && $res->num_rows > 0) return $res->fetch_assoc();
+    return null;
+}
+
+/**
+ * Fetch attendance row for schedule+user
+ */
+function get_attendance(mysqli $db, string $schedule_id, string $user_id): ?array {
+    $sql = "SELECT * FROM attendance WHERE schedule_id = ? AND user_id = ? LIMIT 1";
+    $stmt = $db->prepare($sql);
+    $stmt->bind_param('ss', $schedule_id, $user_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if (!$res || $res->num_rows === 0) return null;
+    return $res->fetch_assoc();
+}
+
+// ----------------------------------------------------
+// HANDLE ADMIN FORM SUBMIT
+// ----------------------------------------------------
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['manual_submit'])) {
+    $employee_id = $_POST['employee_id'];
+    $work_date   = $_POST['work_date'];
+    $clock_in    = !empty($_POST['clock_in']) ? $_POST['clock_in'] : null;
+    $clock_out   = !empty($_POST['clock_out']) ? $_POST['clock_out'] : null;
+    $remarks     = !empty($_POST['remarks']) ? $_POST['remarks'] : "Manual Entry";
+
+    // Step 1: Find schedule
+    $sched = get_schedule($mainConn, $employee_id, $work_date);
+    if (!$sched) {
+        flash_and_redirect("❌ No schedule found for employee on {$work_date}");
+    }
+    $schedule_id = $sched['schedule_id'];
+
+    // Step 2: Map employee → user_id
+    $empStmt = $empConn->prepare("SELECT user_id FROM employees WHERE employee_id = ? LIMIT 1");
+    $empStmt->bind_param('s', $employee_id);
+    $empStmt->execute();
+    $empRes = $empStmt->get_result();
+    if ($empRes->num_rows == 0) {
+        flash_and_redirect("❌ No user_id found for employee_id {$employee_id}");
+    }
+    $user_id = $empRes->fetch_assoc()['user_id'];
+
+   // Step 3: Calculate worked hours (if both clock in/out given)
+$workedHours = null;
+$clockInDT = $clockOutDT = null;
+
+if ($clock_in) {
+    $clockInDT = "$work_date $clock_in:00"; // full DATETIME string
+}
+if ($clock_out) {
+    $clockOutDT = "$work_date $clock_out:00";
+}
+
+// If both exist, calculate worked hours
+if ($clock_in && $clock_out) {
+    $inDT  = new DateTime($clockInDT);
+    $outDT = new DateTime($clockOutDT);
+    if ($outDT < $inDT) {
+        // overnight case
+        $outDT->modify('+1 day');
+        $clockOutDT = $outDT->format("Y-m-d H:i:s");
+    }
+    $seconds     = $outDT->getTimestamp() - $inDT->getTimestamp();
+    $workedHours = max(0, $seconds / 3600);
+}
+
+// Step 4: Insert / Update attendance
+$attendance = get_attendance($mainConn, $schedule_id, $user_id);
+
+if ($attendance === null) {
+    // Insert new
+    $ins = $mainConn->prepare("
+        INSERT INTO attendance (attendance_id, schedule_id, user_id, clock_in, clock_out, remarks, hours_worked)
+        VALUES (UUID(), ?, ?, ?, ?, ?, ?)
+    ");
+    $ins->bind_param('sssssd', $schedule_id, $user_id, $clockInDT, $clockOutDT, $remarks, $workedHours);
+    if ($ins->execute()) {
+        flash_and_redirect("✅ Attendance added for {$work_date}");
+    } else {
+        flash_and_redirect("❌ Insert Error: " . $ins->error);
+    }
+} else {
+    // Update existing
+    $upd = $mainConn->prepare("
+        UPDATE attendance
+           SET clock_in = ?, clock_out = ?, remarks = ?, hours_worked = ?
+         WHERE attendance_id = ?
+         LIMIT 1
+    ");
+    $upd->bind_param('sssds', $clockInDT, $clockOutDT, $remarks, $workedHours, $attendance['attendance_id']);
+    if ($upd->execute()) {
+        flash_and_redirect("✅ Attendance updated for {$work_date}");
+    } else {
+        flash_and_redirect("❌ Update Error: " . $upd->error);
+    }
+}
+}
+?>
+
+<!-- Manual Clock In/Out Form -->
+<div class="bg-white shadow-md rounded-2xl p-6 w-full mx-auto mt-10">
+  <h2 class="text-xl font-bold mb-4">Manual Clock In/Out</h2>
+
+  <?php if (!empty($_SESSION['flash_message'])): ?>
+    <div class="mb-4 p-3 rounded-lg 
+      <?php echo strpos($_SESSION['flash_message'], '✅') !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
+      <?php 
+        echo $_SESSION['flash_message']; 
+        unset($_SESSION['flash_message']);
+      ?>
+    </div>
+  <?php endif; ?>
+
+  <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Select Employee -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Employee</label>
+      <select name="employee_id" class="w-full border rounded-lg p-2" required>
+        <option value="">Select Employee</option>
+        <?php
+        $empRes = $empConn->query("SELECT employee_id, CONCAT(first_name,' ',last_name) AS name FROM hr3_system.employees ORDER BY name");
+        while ($emp = $empRes->fetch_assoc()) {
+            echo "<option value='{$emp['employee_id']}'>" . htmlspecialchars($emp['name']) . "</option>";
+        }
+        ?>
+      </select>
+    </div>
+
+    <!-- Work Date -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Work Date</label>
+      <input type="date" name="work_date" class="w-full border rounded-lg p-2" required>
+    </div>
+
+    <!-- Clock In -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Clock In</label>
+      <input type="time" name="clock_in" class="w-full border rounded-lg p-2">
+    </div>
+
+    <!-- Clock Out -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Clock Out</label>
+      <input type="time" name="clock_out" class="w-full border rounded-lg p-2">
+    </div>
+
+    <!-- Remarks -->
+    <div class="md:col-span-2">
+      <label class="block text-sm font-medium text-gray-700">Remarks</label>
+      <textarea name="remarks" class="w-full border rounded-lg p-2" rows="2"></textarea>
+    </div>
+
+    <!-- Submit -->
+    <div class="md:col-span-2 text-right">
+      <button type="submit" name="manual_submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        Save Attendance
+      </button>
+    </div>
+  </form>
+</div>
+
 
       <?php
       // DB connections
@@ -210,6 +413,8 @@ ORDER BY e.employee_id ASC, s.work_date DESC;
       </div>
     </div>
   </div>
+
+
 
         <?php 
 else: 

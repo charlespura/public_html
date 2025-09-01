@@ -264,7 +264,8 @@ if ($username && $password) {
     <div class="max-w-lg text-white px-6 reveal">
       <img src="picture/logo.png" alt="ATIERA" class="w-56 mb-6 drop-shadow-xl select-none" draggable="false">
       <h1 class="text-4xl font-extrabold leading-tight tracking-tight">
-        ATIERA <span style="color:var(--gold)">HOTEL & RESTAURANT</span> Management
+        ATIERA <span style="color:var(--gold)">HOTEL & RESTAURANT</span> HR3 <br>
+      
       </h1>
       <p class="mt-4 text-white/90 text-lg">Secure • Fast • Intuitive</p>
     </div>

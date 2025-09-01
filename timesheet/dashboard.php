@@ -13,7 +13,7 @@ ini_set('display_errors', 1);
   <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="icon" type="image/png" href="picture/logo2.png" />
+  <link rel="icon" type="image/png" href="/public_html/picture/logo2.png" />
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -135,6 +135,7 @@ if (in_array($roles, ['Admin', 'Manager'])):
       <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M4 15h16M4 19h16" />
       </svg>
+      
       <span class="text-sm font-medium">Assign Shift</span>
     </a>
 
@@ -179,7 +180,21 @@ if (in_array($roles, ['Employee'])):
   <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z" />
   </svg>
-  <span class="text-sm font-medium">Assign Leave</span>
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role']
+
+if (in_array($roles, ['Admin', 'Manager'])): 
+?>
+    <span class="text-sm font-medium">Assign Shift</span>
+<?php 
+elseif ($roles === 'Employee'): 
+?>
+    <span class="text-sm font-medium">My Shift</span>
+<?php 
+endif; 
+?>
+
 </a>
 
 <!-- Claims -->

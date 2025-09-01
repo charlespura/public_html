@@ -3,8 +3,51 @@
     <a href="assignShift.php"
        class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
        <i data-lucide="calendar-range" class="w-4 h-4"></i>
+     
+      
+      
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, [ 'Admin', 'Manager'])): 
+?>
+
        <span>Assign Shift</span>
+
+        <?php 
+else: 
+  
+endif; 
+?>
+
+ 
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, [ 'Employee'])): 
+?>
+
+       <span>My Shift</span>
+
+        <?php 
+else: 
+  
+endif; 
+?>
     </a>
+
+
+
+
+    
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, ['Admin', 'Manager'])): 
+?>
 
     <a href="viewShift.php"
        class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
@@ -12,12 +55,60 @@
        <span>View Shift</span>
     </a>
 
+        <?php 
+else: 
+  
+endif; 
+?>
     <a href="reqShift.php"
        class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
        <i data-lucide="file-text" class="w-4 h-4"></i>
+      
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, [ 'Admin', 'Manager'])): 
+?>
+
        <span>View Request Shift</span>
+
+        <?php 
+else: 
+  
+endif; 
+?>
+
+ 
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, [ 'Employee'])): 
+?>
+
+       <span>Request Shift</span>
+
+        <?php 
+else: 
+  
+endif; 
+?>
     </a>
 
+
+    </a>
+
+
+
+<?php
+// Assume $roles contains the role of the currently logged-in user
+// e.g., $roles = $_SESSION['user_role'];
+
+if (in_array($roles, ['Admin', 'Manager'])): 
+?>
+
+    
     <div class="relative inline-block text-left">
         <button id="configBtn" type="button"
             class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
@@ -42,9 +133,17 @@
                class="block px-3 py-2 rounded hover:bg-gray-700 text-white">
                Status Type
             </a>
+            
         </div>
-    </div>
 
+
+       
+    </div>
+ <?php 
+else: 
+  
+endif; 
+?>
 </div>
 
 <script>

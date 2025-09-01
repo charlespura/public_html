@@ -526,79 +526,123 @@ while($row = $resLeaves->fetch_assoc()){
 }
 ?>
 
+
+
+
 <?php if($employee): ?>
-<div class="overflow-x-auto bg-white shadow rounded-lg">
-  <table class="min-w-full border-collapse">
-    <thead>
-      <tr class="bg-gray-100 text-sm">
-        <th class="px-4 py-2 text-left font-semibold">Employee</th>
-        <?php foreach($days as $day): ?>
-          <th class="px-4 py-2 text-center font-semibold">
-            <?= date('D', strtotime($day)) ?><br>
-            <span class="text-xs text-gray-500"><?= date('m/d', strtotime($day)) ?></span>
-          </th>
-        <?php endforeach; ?>
-      </tr>
-    </thead>
-    <tbody class="text-sm divide-y">
-      <tr>
-        <td class="px-4 py-2 font-medium whitespace-nowrap"><?= htmlspecialchars($employee['fullname']) ?></td>
-        <?php foreach($days as $day): 
-            $shift_id = $schedules[$employee['employee_id']][$day] ?? '';
-            $note_text = $notes[$employee['employee_id']][$day] ?? '';
-            $isLeave = isset($leaves[$employee['employee_id']][$day]);
-        ?>
-        <td class="px-2 py-2 text-center align-middle">
-          <div class="flex flex-col items-center gap-1">
-            <select class="w-full sm:w-auto text-xs sm:text-sm p-1 border rounded-lg focus:ring-2 focus:ring-blue-500" disabled>
-                <?php if($isLeave): ?>
-                    <option selected>On Leave</option>
-                <?php else: ?>
-                    <option <?= $shift_id==''?'selected':'' ?>>Off</option>
-                    <?php foreach($shiftsArray as $s): ?>
-                        <option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
-                            <?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
-                        </option>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </select>
-           <button type="button" class="text-blue-500 hover:text-blue-700 text-lg"
-    onclick="openNoteModal('<?= $employee['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">
-    📝
-</button>
-<!-- Modal structure -->
+<div class="bg-white shadow rounded-lg">
+  <!-- Desktop view (hidden on small screens) -->
+  <div class="hidden md:block overflow-x-auto">
+    <table class="min-w-full border-collapse table-auto">
+      <thead>
+        <tr class="bg-gray-100 text-sm">
+          <th class="px-4 py-2 text-left font-semibold">Employee</th>
+          <?php foreach($days as $day): ?>
+            <th class="px-4 py-2 text-center font-semibold">
+              <?= date('D', strtotime($day)) ?><br>
+              <span class="text-xs text-gray-500"><?= date('m/d', strtotime($day)) ?></span>
+            </th>
+          <?php endforeach; ?>
+        </tr>
+      </thead>
+      <tbody class="text-sm divide-y">
+        <tr>
+          <td class="px-4 py-2 font-medium whitespace-nowrap"><?= htmlspecialchars($employee['fullname']) ?></td>
+          <?php foreach($days as $day): 
+              $shift_id = $schedules[$employee['employee_id']][$day] ?? '';
+              $note_text = $notes[$employee['employee_id']][$day] ?? '';
+              $isLeave = isset($leaves[$employee['employee_id']][$day]);
+          ?>
+          <td class="px-2 py-2 text-center align-middle">
+            <div class="flex flex-col items-center gap-1">
+              <select class="w-full text-xs sm:text-sm p-1 border rounded-lg focus:ring-2 focus:ring-blue-500" disabled>
+                  <?php if($isLeave): ?>
+                      <option selected>On Leave</option>
+                  <?php else: ?>
+                      <option <?= $shift_id==''?'selected':'' ?>>Off</option>
+                      <?php foreach($shiftsArray as $s): ?>
+                          <option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
+                              <?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
+                          </option>
+                      <?php endforeach; ?>
+                  <?php endif; ?>
+              </select>
+              <button type="button" class="text-blue-500 hover:text-blue-700 text-lg"
+                  onclick="openNoteModal('<?= $employee['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">
+                  📝
+              </button>
+            </div>
+          </td>
+          <?php endforeach; ?>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile stacked view (hidden on desktop) -->
+  <div class="block md:hidden p-4 space-y-4">
+    <h3 class="text-base font-semibold mb-2"><?= htmlspecialchars($employee['fullname']) ?></h3>
+    <?php foreach($days as $day): 
+        $shift_id = $schedules[$employee['employee_id']][$day] ?? '';
+        $note_text = $notes[$employee['employee_id']][$day] ?? '';
+        $isLeave = isset($leaves[$employee['employee_id']][$day]);
+    ?>
+    <div class="border rounded-lg p-3 shadow-sm">
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-medium"><?= date('D', strtotime($day)) ?></span>
+        <span class="text-xs text-gray-500"><?= date('m/d', strtotime($day)) ?></span>
+      </div>
+      <div>
+        <select class="w-full text-sm p-2 border rounded-lg focus:ring-2 focus:ring-blue-500" disabled>
+            <?php if($isLeave): ?>
+                <option selected>On Leave</option>
+            <?php else: ?>
+                <option <?= $shift_id==''?'selected':'' ?>>Off</option>
+                <?php foreach($shiftsArray as $s): ?>
+                    <option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
+                        <?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
+                    </option>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </select>
+      </div>
+      <button type="button" class="mt-2 text-blue-500 hover:text-blue-700 text-lg"
+          onclick="openNoteModal('<?= $employee['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">
+          📝 View Note
+      </button>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</div>
+
+<!-- Modal -->
 <div id="noteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-  <div class="bg-white rounded-lg p-4 w-80 max-w-full">
+  <div class="bg-white rounded-lg p-4 w-11/12 max-w-md">
     <h2 class="text-lg font-semibold mb-2">Shift Note</h2>
     <p id="noteContent" class="text-gray-700 whitespace-pre-wrap"></p>
     <button onclick="closeNoteModal()" class="mt-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Close</button>
   </div>
 </div>
-<script>function openNoteModal(employeeId, date, note) {
+
+<script>
+function openNoteModal(employeeId, date, note) {
     const modal = document.getElementById('noteModal');
     const content = document.getElementById('noteContent');
-
     content.textContent = note || 'No notes for this shift.';
     modal.classList.remove('hidden');
-    modal.classList.add('flex'); // use flex to center
+    modal.classList.add('flex'); // center modal
 }
-
 function closeNoteModal() {
     const modal = document.getElementById('noteModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 }
 </script>
-          </div>
-        </td>
-        <?php endforeach; ?>
-      </tr>
-    </tbody>
-  </table>
-</div>
+
 <?php else: ?>
 <p class="text-gray-600 italic">No schedule found for you.</p>
 <?php endif; ?>
+
 
         <?php 
 else: 

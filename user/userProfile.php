@@ -4,41 +4,130 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
-
 <?php
-// DB connection
+// ================== DB Connections ==================
 include __DIR__ . '/../dbconnection/dbEmployee.php';
 $empConn = $conn;
 include __DIR__ . '/../dbconnection/mainDB.php';
 $shiftConn = $conn;
 
-// Handle Delete
+// ================== Firebase Delete Helper ==================
+function deleteFromFirebase($firebaseUid) {
+    if (!$firebaseUid) return;
+
+    $serviceAccountPath = __DIR__ . '/../firebase-admin-key.json';
+    if (!file_exists($serviceAccountPath)) {
+        error_log("❌ Firebase service account file missing.");
+        return;
+    }
+    $serviceAccount = json_decode(file_get_contents($serviceAccountPath), true);
+
+    // Build JWT for Google OAuth2
+    $jwtHeader = rtrim(strtr(base64_encode(json_encode(['alg' => 'RS256','typ' => 'JWT'])), '+/', '-_'), '=');
+    $now = time();
+    $jwtClaim = rtrim(strtr(base64_encode(json_encode([
+        'iss' => $serviceAccount['client_email'],
+        'scope' => 'https://www.googleapis.com/auth/identitytoolkit',
+        'aud' => 'https://oauth2.googleapis.com/token',
+        'iat' => $now,
+        'exp' => $now + 3600
+    ])), '+/', '-_'), '=');
+
+    $signatureInput = $jwtHeader.'.'.$jwtClaim;
+    openssl_sign($signatureInput, $signature, openssl_pkey_get_private($serviceAccount['private_key']), 'sha256WithRSAEncryption');
+    $jwt = $signatureInput.'.'.rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+
+    // Exchange JWT for access token
+    $ch = curl_init("https://oauth2.googleapis.com/token");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ["Content-Type: application/x-www-form-urlencoded"],
+        CURLOPT_POSTFIELDS => http_build_query([
+            "grant_type" => "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            "assertion" => $jwt
+        ])
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $tokenData = json_decode($response, true);
+
+    if (!isset($tokenData['access_token'])) {
+        error_log("❌ Firebase token error: " . $response);
+        return;
+    }
+    $accessToken = $tokenData['access_token'];
+
+    // Call Firebase REST API to delete user
+    $url = "https://identitytoolkit.googleapis.com/v1/projects/{$serviceAccount['project_id']}/accounts:delete";
+    $payload = json_encode(['localId' => $firebaseUid]);
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer $accessToken",
+            "Content-Type: application/json"
+        ],
+        CURLOPT_POSTFIELDS => $payload
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $resData = json_decode($response, true);
+    if (isset($resData['error'])) {
+        error_log("❌ Firebase deletion failed: " . $response);
+    } else {
+        error_log("✅ Firebase user $firebaseUid deleted successfully.");
+    }
+}
+
+// ================== Handle Delete ==================
 if (isset($_GET['delete'])) {
     $deleteId = $_GET['delete'];
 
-    // 1. Unlink employee (set user_id NULL so FK won’t block)
+    // 0. Get firebase_uid before deleting
+    $stmt = $shiftConn->prepare("SELECT firebase_uid FROM users WHERE user_id = ?");
+    $stmt->bind_param("s", $deleteId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $firebaseUid = $row['firebase_uid'] ?? null;
+    $stmt->close();
+
+    // 1. Unlink employee
     $stmt = $empConn->prepare("UPDATE employees SET user_id = NULL WHERE user_id = ?");
     $stmt->bind_param("s", $deleteId);
     $stmt->execute();
+    $stmt->close();
 
-    // 2. Delete user roles if you have them
-    $stmt = $conn->prepare("DELETE FROM user_roles WHERE user_id = ?");
+    // 2. Delete user roles
+    $stmt = $shiftConn->prepare("DELETE FROM user_roles WHERE user_id = ?");
     $stmt->bind_param("s", $deleteId);
     $stmt->execute();
+    $stmt->close();
 
     // 3. Delete user profile
-    $stmt = $conn->prepare("DELETE FROM user_profiles WHERE user_id = ?");
+    $stmt = $shiftConn->prepare("DELETE FROM user_profiles WHERE user_id = ?");
     $stmt->bind_param("s", $deleteId);
     $stmt->execute();
+    $stmt->close();
 
     // 4. Delete user
-    $stmt = $conn->prepare("DELETE FROM users WHERE user_id = ?");
+    $stmt = $shiftConn->prepare("DELETE FROM users WHERE user_id = ?");
     $stmt->bind_param("s", $deleteId);
     $stmt->execute();
+    $stmt->close();
+
+    // 5. Delete from Firebase
+    deleteFromFirebase($firebaseUid);
 
     header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
+
+// ================== Handle Update ==================
 $imageUploadError = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
@@ -50,52 +139,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
     $timezone   = $_POST['timezone'];
     $locale     = $_POST['locale'];
 
-if (isset($_FILES['reference_image']) && $_FILES['reference_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-    if ($_FILES['reference_image']['error'] === UPLOAD_ERR_OK) {
-        // Ensure directory exists
-        $uploadDir = __DIR__ . '/../uploads/reference_image/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+    if (isset($_FILES['reference_image']) && $_FILES['reference_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['reference_image']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../uploads/reference_image/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-        $ext = pathinfo($_FILES['reference_image']['name'], PATHINFO_EXTENSION);
-        $filename = $user_id . '.' . $ext;
-        $filePath = $uploadDir . $filename;
+            $ext = pathinfo($_FILES['reference_image']['name'], PATHINFO_EXTENSION);
+            $filename = $user_id . '.' . $ext;
+            $filePath = $uploadDir . $filename;
 
-        if (move_uploaded_file($_FILES['reference_image']['tmp_name'], $filePath)) {
-            // Save relative web path for displaying
-            $reference_image = 'uploads/reference_image/' . $filename;
-            $stmt = $conn->prepare("UPDATE users SET reference_image=? WHERE user_id=?");
-            $stmt->bind_param("ss", $reference_image, $user_id);
-            $stmt->execute();
+            if (move_uploaded_file($_FILES['reference_image']['tmp_name'], $filePath)) {
+                $reference_image = 'uploads/reference_image/' . $filename;
+                $stmt = $shiftConn->prepare("UPDATE users SET reference_image=? WHERE user_id=?");
+                $stmt->bind_param("ss", $reference_image, $user_id);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                $imageUploadError = "⚠️ Failed to move uploaded image.";
+            }
         } else {
-            $imageUploadError = "⚠️ Failed to move uploaded image.";
+            $imageUploadError = "⚠️ Error uploading image. Error code: " . $_FILES['reference_image']['error'];
         }
-    } else {
-        $imageUploadError = "⚠️ Error uploading image. Error code: " . $_FILES['reference_image']['error'];
     }
-}
 
-    // Update user profile fields
-    $stmt = $conn->prepare("
+    $stmt = $shiftConn->prepare("
         UPDATE user_profiles 
         SET first_name=?, last_name=?, phone=?, address=?, timezone=?, locale=? 
         WHERE user_id=?
     ");
     $stmt->bind_param("sssssss", $first_name, $last_name, $phone, $address, $timezone, $locale, $user_id);
     $stmt->execute();
-    
+    $stmt->close();
+
     header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
 
-// Fetch records (join users + user_profiles)
-$res = $conn->query("
+// ================== Fetch Records ==================
+$res = $shiftConn->query("
     SELECT u.user_id, u.reference_image, 
            p.first_name, p.last_name, p.phone, p.address, p.timezone, p.locale
     FROM users u
     LEFT JOIN user_profiles p ON u.user_id = p.user_id
 ");
+?>
 
-?> 
+
+
 
 <!DOCTYPE html>
 <html lang="en">
