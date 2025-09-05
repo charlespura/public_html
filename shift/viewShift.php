@@ -10,7 +10,7 @@ ini_set('display_errors', 1);
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Time and Attendance</title>
+  <title>Shift and Schedule</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="icon" type="image/png" href="../picture/logo2.png" />
@@ -112,7 +112,7 @@ $result = $shiftConn->query($sql);
            class="border rounded p-2" placeholder="Notes">
 
     <div class="flex space-x-2">
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Filter</button>
+        <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">Filter</button>
         <a href="viewShift.php" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Reset</a>
     </div>
 </form>

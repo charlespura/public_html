@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("ssi", $type_name, $description, $is_active);
             if ($stmt->execute()) {
                 $message = "✅ Request type <b>$type_name</b> added successfully.";
+                $messageType = "success";
             }
         }
 
@@ -35,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("ssis", $type_name, $description, $is_active, $type_id);
             if ($stmt->execute()) {
                 $message = "✅ Request type updated successfully.";
+                $messageType = "success";
             }
         }
 
@@ -57,13 +59,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch all request types
 $result = $shiftConn->query("SELECT * FROM request_types ORDER BY created_at DESC");
 ?>
+<?php
+if (!$result) {
+    echo "❌ Query error: " . $shiftConn->error;
+} elseif ($result->num_rows === 0) {
+    echo "⚠️ No request types found in the database.";
+}
+?>
 
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Time and Attendance</title>
+  <title> Shift and Schedule</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="icon" type="image/png" href="../picture/logo2.png" />
@@ -102,11 +111,14 @@ include 'shiftnavbar.php';
 ?>
 <div class="container mx-auto p-6">
     <h2 class="text-2xl font-bold mb-4">Manage Request Types</h2>
+
 <?php if (!empty($message)): ?>
-    <div style="padding:10px; margin:10px 0; border-radius:6px; background:#f1f5f9; border:1px solid #cbd5e1; color:#1e293b;">
-        <?= $message ?>
+    <div class="mb-4 px-4 py-3 rounded-lg text-white 
+        <?= (isset($messageType) && $messageType === 'success') ? 'bg-green-500' : 'bg-red-500' ?>">
+        <?= htmlspecialchars($message) ?>
     </div>
 <?php endif; ?>
+
 
     <!-- Add / Edit Form -->
     <form method="post" class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -126,45 +138,62 @@ include 'shiftnavbar.php';
             <label for="is_active">Active</label>
         </div>
         <div>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" id="form_submit">Add</button>
+            <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto" id="form_submit">Add</button>
         </div>
     </form>
 
-    <!-- Request Types Table -->
-    <div class="overflow-x-auto">
-        <table class="min-w-full border border-gray-200 rounded-lg">
-            <thead>
-                <tr class="bg-gray-100 text-left">
-                    <th class="px-4 py-2 border">Type Name</th>
-                    <th class="px-4 py-2 border">Description</th>
-                    <th class="px-4 py-2 border">Active</th>
-                    <th class="px-4 py-2 border">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php
+$result = $shiftConn->query("SELECT * FROM request_types ORDER BY created_at DESC");
+?>
+
+<div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-200 rounded-lg">
+        <thead>
+            <tr class="bg-gray-100 text-left">
+                <th class="px-4 py-2 border">Type ID</th>
+                <th class="px-4 py-2 border">Type Name</th>
+                <th class="px-4 py-2 border">Description</th>
+                <th class="px-4 py-2 border">Active</th>
+                <th class="px-4 py-2 border">Created</th>
+                <th class="px-4 py-2 border">Updated</th>
+                <th class="px-4 py-2 border">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if ($result && $result->num_rows > 0): ?>
                 <?php while ($row = $result->fetch_assoc()): ?>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-2 border"><?= htmlspecialchars($row['type_name']) ?></td>
-                    <td class="px-4 py-2 border"><?= htmlspecialchars($row['description']) ?></td>
-                    <td class="px-4 py-2 border"><?= $row['is_active'] ? 'Yes' : 'No' ?></td>
-                    <td class="px-4 py-2 border space-x-2">
-                        <button type="button" class="bg-yellow-400 px-2 py-1 rounded text-white editBtn"
-                            data-id="<?= $row['type_id'] ?>"
-                            data-name="<?= htmlspecialchars($row['type_name']) ?>"
-                            data-desc="<?= htmlspecialchars($row['description']) ?>"
-                            data-active="<?= $row['is_active'] ?>"
-                        >Edit</button>
-                        <button type="button" class="bg-red-500 px-2 py-1 rounded text-white deleteBtn"
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 border"><?= htmlspecialchars($row['type_id']) ?></td>
+                        <td class="px-4 py-2 border"><?= htmlspecialchars($row['type_name']) ?></td>
+                        <td class="px-4 py-2 border"><?= htmlspecialchars($row['description']) ?></td>
+                        <td class="px-4 py-2 border"><?= $row['is_active'] ? 'Yes' : 'No' ?></td>
+                        <td class="px-4 py-2 border"><?= htmlspecialchars($row['created_at']) ?></td>
+                        <td class="px-4 py-2 border"><?= htmlspecialchars($row['updated_at']) ?></td>
+                        <td class="px-4 py-2 border space-x-2">
+                            <button class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto editBtn"
                                 data-id="<?= $row['type_id'] ?>"
-                                data-name="<?= htmlspecialchars($row['type_name']) ?>">
-                            Delete
-                        </button>
+                                data-name="<?= htmlspecialchars($row['type_name']) ?>"
+                                data-desc="<?= htmlspecialchars($row['description']) ?>"
+                                data-active="<?= $row['is_active'] ?>"
+                            >Edit</button>
+                            <button class="bg-red-500 px-2 py-1 rounded text-white deleteBtn"
+                                data-id="<?= $row['type_id'] ?>"
+                                data-name="<?= htmlspecialchars($row['type_name']) ?>"
+                            >Delete</button>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="7" class="px-4 py-2 border text-yellow-600">
+                        ⚠️ No request types found in the database.
                     </td>
                 </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
 </div>
 
 <!-- Delete Confirmation Modal -->

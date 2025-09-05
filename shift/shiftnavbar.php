@@ -54,7 +54,11 @@ if (in_array($roles, ['Admin', 'Manager'])):
        <i data-lucide="calendar" class="w-4 h-4"></i>
        <span>View Shift</span>
     </a>
-
+  <a href="noShift.php"
+       class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 text-white">
+       <i data-lucide="calendar" class="w-4 h-4"></i>
+       <span>No Shift Employee</span>
+    </a>
         <?php 
 else: 
   

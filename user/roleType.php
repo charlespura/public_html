@@ -143,7 +143,7 @@ include 'userNavbar.php'; ?>
             <td class="p-2"><?= htmlspecialchars($row['created_at']) ?></td>
             <td class="p-2 flex justify-center space-x-2">
               <button onclick='openEditModal(<?= json_encode($row) ?>)'
-                      class="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600">
+                      class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">
                 Edit
               </button>
               <button onclick="openDeleteModal('<?= $row['role_id'] ?>')"

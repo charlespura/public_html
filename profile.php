@@ -1,5 +1,4 @@
 <?php
-
 include __DIR__ . '/dbconnection/mainDb.php';
 
 // Fetch user data for header (only if logged in)
@@ -40,12 +39,30 @@ if (!empty($_SESSION['user_id'])) {
     }
 }
 ?>
-
 <!-- Right: User Info -->
-<div class="relative flex items-center gap-4">
-  <!-- Clock -->
-  <span id="clock" class="text-sm text-gray-600 font-mono"></span>
+<div class="relative flex items-center gap-4" id="headerContainer">
 
+  <!-- Clock + SVG -->
+  <div class="flex items-center gap-2">
+    <span id="clock" class="text-sm text-gray-600 font-mono"></span>
+
+    <!-- Zoomable SVG with tooltip (hover only on SVG) -->
+    <div class="relative group">
+      <svg id="clockIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6 text-gray-600 cursor-pointer">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+      </svg>
+
+      <!-- Tooltip only shows when hovering the SVG -->
+      <span class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-700 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        Toggle Fullscreen
+      </span>
+    </div>
+  </div>
+
+
+
+
+  <!-- User Dropdown Toggle -->
   <button id="userDropdownToggle" class="flex items-center gap-2 focus:outline-none">
     <img src="/public_html/<?php echo htmlspecialchars($profileImage); ?>" 
          alt="profile picture" 
@@ -63,27 +80,65 @@ if (!empty($_SESSION['user_id'])) {
 
   <!-- Dropdown -->
   <div id="userDropdown" class="absolute right-0 mt-2 w-40 bg-white rounded shadow-lg hidden z-20">
-      <a href="/public_html/user/createUser.php" 
-         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo ($currentPage == '/user/createUser.php') ? 'bg-gray-700 text-white' : ''; ?>">
-          Profile
-      </a>
-        <a href="/public_html/user/changePassword.php" 
-         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo ($currentPage == '/user/createUser.php') ? 'bg-gray-700 text-white' : ''; ?>">
-          Change Password
-      </a>
+      <a href="/public_html/user/createUser.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo ($currentPage == '/user/createUser.php') ? 'bg-gray-700 text-white' : ''; ?>">Profile</a>
+      <a href="/public_html/user/changePassword.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Change Password</a>
       <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
-      <a href="/public_html/logout.php"
-         class="flex items-center gap-3 px-3 py-2 rounded hover:bg-red-600 hover:text-white transition-colors <?php echo ($currentPage == '/logout.php') ? 'bg-red-500 text-white' : 'text-red-500'; ?>">
+      <a href="/public_html/logout.php" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-red-600 hover:text-white transition-colors <?php echo ($currentPage == '/logout.php') ? 'bg-red-500 text-white' : 'text-red-500'; ?>">
           <i data-lucide="log-out" class="w-5 h-5"></i>
           <span class="sidebar-text">Logout</span>
       </a>
   </div>
 </div>
 
+<!-- Fullscreen Overlay -->
+<div id="fullscreenOverlay" class="fixed inset-0 bg-white z-50 hidden flex items-center justify-center transition-all duration-300">
+  <div class="flex items-center gap-6 text-4xl font-bold" id="overlayContent">
+    <span id="overlayClock"></span>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-16 h-16 text-gray-800">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+    </svg>
+  </div>
+</div>
+
 <script>
+// Clock code
+function updateClock() {
+  const now = new Date();
+  let hours = now.getHours().toString().padStart(2,'0');
+  let minutes = now.getMinutes().toString().padStart(2,'0');
+  let seconds = now.getSeconds().toString().padStart(2,'0');
+  document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+  document.getElementById('overlayClock').textContent = `${hours}:${minutes}:${seconds}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Fullscreen toggle
+const clockIcon = document.getElementById("clockIcon");
+let isFullscreen = false;
+
+clockIcon.addEventListener("click", () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+    });
+    isFullscreen = true;
+  } else {
+    document.exitFullscreen();
+    isFullscreen = false;
+  }
+});
+
+// Listen for fullscreen changes
+document.addEventListener('fullscreenchange', () => {
+  isFullscreen = !!document.fullscreenElement;
+});
+
+// Handle dropdown clicks without exiting fullscreen
 document.addEventListener("DOMContentLoaded", function () {
     const userDropdownToggle = document.getElementById("userDropdownToggle");
     const userDropdown = document.getElementById("userDropdown");
+    const dropdownLinks = userDropdown.querySelectorAll('a');
 
     if(userDropdownToggle && userDropdown) {
         userDropdownToggle.addEventListener("click", function (event) {
@@ -97,23 +152,71 @@ document.addEventListener("DOMContentLoaded", function () {
                 userDropdown.classList.add("hidden");
             }
         });
+        
+        // Handle dropdown link clicks
+        dropdownLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                // For logout, allow normal behavior
+                if (this.href.includes('logout.php')) {
+                    return true;
+                }
+                
+                // For other links, prevent default and handle with AJAX
+                e.preventDefault();
+                
+                // Close dropdown
+                userDropdown.classList.add("hidden");
+                
+                // If in fullscreen, load content via AJAX instead of navigating
+                if (isFullscreen) {
+                    loadContent(this.href);
+                } else {
+                    // Not in fullscreen, normal navigation
+                    window.location.href = this.href;
+                }
+            });
+        });
     }
 });
-</script>
 
-<script>
-function updateClock() {
-  const now = new Date();
-  let hours = now.getHours();
-  let minutes = now.getMinutes();
-  let seconds = now.getSeconds();
-  
-  hours = hours.toString().padStart(2, '0');
-  minutes = minutes.toString().padStart(2, '0');
-  seconds = seconds.toString().padStart(2, '0');
-
-  document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+// Function to load content via AJAX
+function loadContent(url) {
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            // This would need to be customized based on your page structure
+            // For demonstration, we're just updating the main content area
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newContent = doc.querySelector('main') || doc.body;
+            
+            // Update the page content without reloading
+            document.querySelector('main').innerHTML = newContent.innerHTML;
+            
+            // Update the page title
+            document.title = doc.title;
+            
+            // Update browser history
+            window.history.pushState({}, '', url);
+            
+            // Reinitialize any necessary scripts
+            initializePageScripts();
+        })
+        .catch(err => {
+            console.error('Failed to load page: ', err);
+        });
 }
-setInterval(updateClock, 1000);
-updateClock();
+
+// Function to reinitialize scripts after AJAX load
+function initializePageScripts() {
+    // Reinitialize any scripts that need to run after content load
+    // This will depend on your specific page functionality
+}
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', function(event) {
+    if (isFullscreen) {
+        loadContent(window.location.href);
+    }
+});
 </script>

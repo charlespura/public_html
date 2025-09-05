@@ -9,7 +9,7 @@ ini_set('display_errors', 1);
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Time and Attendance</title>
+  <title>Shift and Schedule</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="icon" type="image/png" href="../picture/logo2.png" />
@@ -100,7 +100,7 @@ $result = $shiftConn->query("SELECT * FROM request_statuses ORDER BY created_at 
             <label for="is_active">Active</label>
         </div>
         <div>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" id="form_submit">Add</button>
+            <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto" id="form_submit">Add</button>
         </div>
     </form>
 
@@ -122,7 +122,7 @@ $result = $shiftConn->query("SELECT * FROM request_statuses ORDER BY created_at 
                     <td class="px-4 py-2 border"><?= htmlspecialchars($row['description']) ?></td>
                     <td class="px-4 py-2 border"><?= $row['is_active'] ? 'Yes' : 'No' ?></td>
                     <td class="px-4 py-2 border space-x-2">
-                        <button type="button" class="bg-yellow-400 px-2 py-1 rounded text-white editBtn"
+                        <button type="button" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto editBtn"
                             data-id="<?= $row['status_id'] ?>"
                             data-name="<?= htmlspecialchars($row['status_name']) ?>"
                             data-desc="<?= htmlspecialchars($row['description']) ?>"

@@ -168,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Time and Attendance</title>
+  <title>Shift and Schedule</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="icon" type="image/png" href="../picture/logo2.png" />
@@ -296,7 +296,7 @@ $requestTypes = $shiftConn->query("SELECT type_name FROM request_types WHERE is_
 
   <!-- Submit -->
   <div class="md:col-span-2 flex justify-end">
-      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+      <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">
           📌 Submit Request
       </button>
   </div>
@@ -626,7 +626,7 @@ if (in_array($roles, [ 'Employee'])):
 
         <!-- Submit -->
         <div class="text-right">
-            <button type="submit" name="request_shift" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+            <button type="submit" name="request_shift" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">
                 📌 Submit Request
             </button>
         </div>

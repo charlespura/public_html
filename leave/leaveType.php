@@ -173,8 +173,8 @@ $leaveTypes = $result->fetch_all(MYSQLI_ASSOC);
                 <td class="py-2 px-4 border"><?= htmlspecialchars($row['description']) ?></td>
                 <td class="py-2 px-4 border"><?= $row['max_days_per_year'] ?></td>
                 <td class="py-2 px-4 border text-center space-x-2">
-                  <button onclick="openEditModal(<?= $row['leave_type_id'] ?>,'<?= htmlspecialchars($row['leave_name'], ENT_QUOTES) ?>','<?= htmlspecialchars($row['description'], ENT_QUOTES) ?>',<?= $row['max_days_per_year'] ?>)" class="px-3 py-1 rounded bg-green-500 text-white hover:bg-green-600">Edit</button>
-                  <button onclick="openDeleteModal(<?= $row['leave_type_id'] ?>)" class="px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600">Delete</button>
+                  <button onclick="openEditModal(<?= $row['leave_type_id'] ?>,'<?= htmlspecialchars($row['leave_name'], ENT_QUOTES) ?>','<?= htmlspecialchars($row['description'], ENT_QUOTES) ?>',<?= $row['max_days_per_year'] ?>)" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">Edit</button>
+                  <button onclick="openDeleteModal(<?= $row['leave_type_id'] ?>)" class="bg-red-500 px-2 py-1 rounded text-white">Delete</button>
                 </td>
               </tr>
               <?php endforeach; ?>

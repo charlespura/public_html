@@ -125,14 +125,49 @@ session_start();
         </div>
         <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
-        <!-- Form for submitting webcam capture -->
-        <form id="attendanceForm" action="verify.php" method="POST">
-            <input type="hidden" name="current" id="current">
-            <button type="button" id="snap"
-                class="btn bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-md transition">
-                Clock In / Clock Out
-            </button>
-        </form>
+    <!-- Form for submitting webcam capture -->
+<form id="attendanceForm" action="verify.php" method="POST">
+    <input type="hidden" name="current" id="current">
+    <button type="button" id="snap"
+        class="btn bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-md transition">
+        Clock In / Clock Out
+    </button>
+</form>
+
+<script>
+document.getElementById('snap').addEventListener('click', function() {
+    const btn = this;
+
+    // Disable the button to prevent double-click
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+
+    // Optionally you can capture webcam here before submitting
+    // For example: takeSnapshot();
+
+    // Submit the form
+    const form = document.getElementById('attendanceForm');
+    form.submit();
+
+    // Optional: if using AJAX, you can re-enable or redirect after success
+    /*
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form)
+    }).then(response => response.json())
+      .then(data => {
+          // Redirect or show message
+          window.location.href = 'dashboard.php'; // or reload
+      })
+      .catch(err => {
+          alert('Error: ' + err);
+          btn.disabled = false;
+          btn.textContent = 'Clock In / Clock Out';
+      });
+    */
+});
+</script>
+
         
         <div class="mt-6 text-sm text-gray-500">
             Ensure good lighting and face the camera directly

@@ -23,12 +23,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $employee_id = $_POST['employee_id'];
     $username    = $_POST['username'];
-    $email       = $_POST['email'];
     $password    = $_POST['password'];
     $role_id     = $_POST['role_id'];
 
     $user_id = uniqid();
     $password_hash = password_hash($password, PASSWORD_BCRYPT);
+
+    // 🔹 Fetch email from employees.personal_email
+    $stmt = $empConn->prepare("SELECT personal_email FROM employees WHERE employee_id = ?");
+    $stmt->bind_param("s", $employee_id);
+    $stmt->execute();
+    $stmt->bind_result($employee_email);
+    $stmt->fetch();
+    $stmt->close();
+
+    $email = $employee_email ?: ''; // fallback empty string if null
 
     // Handle image upload
     $reference_image = null;
@@ -47,16 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         // Insert into MySQL users
- $firebase_uid = $_POST['firebase_uid'] ?? null;
+        $firebase_uid = $_POST['firebase_uid'] ?? null;
 
-$stmt = $mainConn->prepare("
-    INSERT INTO users (user_id, username, email, password_hash, reference_image, firebase_uid, is_active, is_verified)
-    VALUES (?, ?, ?, ?, ?, ?, 1, 0)
-");
-$stmt->bind_param("ssssss", $user_id, $username, $email, $password_hash, $reference_image, $firebase_uid);
-$stmt->execute();
-
-
+        $stmt = $mainConn->prepare("
+            INSERT INTO users (user_id, username, email, password_hash, reference_image, firebase_uid, is_active, is_verified)
+            VALUES (?, ?, ?, ?, ?, ?, 1, 0)
+        ");
+        $stmt->bind_param("ssssss", $user_id, $username, $email, $password_hash, $reference_image, $firebase_uid);
+        $stmt->execute();
 
         // Insert into user_profiles
         $stmt = $mainConn->prepare("
@@ -82,8 +89,6 @@ $stmt->execute();
         $stmt->bind_param("ss", $user_id, $employee_id);
         $stmt->execute();
 
-        // ✅ At this point, MySQL insertion is complete.
-        // We’ll let Firebase handle Auth + email verification via JS (below).
         $message = "✅ User account created successfully. Firebase Auth pending verification.";
         $messageType = 'success';
 
@@ -177,35 +182,102 @@ if (in_array($roles, ['Admin', 'Manager'])):
     <!-- enctype is required for file uploads -->
     <form action="" method="POST" enctype="multipart/form-data" class="space-y-4">
 
-      <!-- Employee Selection -->
-      <div>
-        <label for="employee_id" class="block text-gray-700 font-semibold mb-1">Select Employee</label>
-        <select id="employee_id" name="employee_id" required
-          class="w-full border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400">
-          <?php
-          $res = $empConn->query("SELECT employee_id, first_name, last_name, employee_code FROM employees WHERE user_id IS NULL");
-          while($row = $res->fetch_assoc()) {
-              echo "<option value='{$row['employee_id']}'>{$row['employee_code']} - {$row['first_name']} {$row['last_name']}</option>";
-          }
-          ?>
-        </select>
-      </div>
+<!-- Employee input -->
+<div>
+  <label class="block text-gray-700 font-semibold mb-1">Employee</label>
+  <input type="text" id="employeeInput" class="w-full border p-2 rounded" placeholder="Type employee name..." autocomplete="off" required>
+  <input type="hidden" id="employee_id" name="employee_id"> <!-- hidden actual ID -->
+  <div id="suggestions" class="border rounded mt-1 max-h-40 overflow-auto hidden bg-white shadow"></div>
+</div>
 
-      <!-- Username -->
-      <div>
-        <label for="username" class="block text-gray-700 font-semibold mb-1">Username</label>
-        <input type="text" id="username" name="username" required
-          class="w-full border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
-          placeholder="Enter username">
-      </div>
+<script>
+const employees = [
+  <?php
+  $res = $empConn->query("SELECT employee_id, first_name, last_name, employee_code, personal_email 
+                          FROM employees WHERE user_id IS NULL");
+  $empData = [];
+  while($row = $res->fetch_assoc()) {
+      $empData[] = [
+          'id' => $row['employee_id'],
+          'name' => $row['first_name'] . ' ' . $row['last_name'],
+          'code' => $row['employee_code'],
+          'email' => $row['personal_email'] ?? ''
+      ];
+  }
+  echo json_encode($empData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+  ?>
+][0]; // fix JSON inline output
+</script>
 
-      <!-- Email -->
-      <div>
-        <label for="email" class="block text-gray-700 font-semibold mb-1">Email</label>
-        <input type="email" id="email" name="email" required
-          class="w-full border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
-          placeholder="Enter email">
-      </div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("employeeInput");
+  const suggestions = document.getElementById("suggestions");
+  const hiddenId = document.getElementById("employee_id");
+  const emailField = document.getElementById("email");
+
+  input.addEventListener("input", function() {
+    const query = this.value.toLowerCase();
+    suggestions.innerHTML = "";
+    if (!query) {
+      suggestions.classList.add("hidden");
+      return;
+    }
+
+    const matches = employees.filter(e => e.name.toLowerCase().includes(query));
+    if (matches.length === 0) {
+      suggestions.classList.add("hidden");
+      return;
+    }
+
+    matches.forEach(emp => {
+      const div = document.createElement("div");
+      div.textContent = `${emp.code} - ${emp.name}`;
+      div.className = "p-2 hover:bg-blue-100 cursor-pointer";
+      div.addEventListener("click", () => {
+        input.value = `${emp.code} - ${emp.name}`;
+        hiddenId.value = emp.id;
+        emailField.value = emp.email;
+        suggestions.classList.add("hidden");
+      });
+      suggestions.appendChild(div);
+    });
+
+    suggestions.classList.remove("hidden");
+  });
+
+  // Hide suggestions if clicked outside
+  document.addEventListener("click", (e) => {
+    if (!suggestions.contains(e.target) && e.target !== input) {
+      suggestions.classList.add("hidden");
+    }
+  });
+});
+</script>
+
+<!-- Username -->
+<div>
+  <label for="username" class="block text-gray-700 font-semibold mb-1">Username</label>
+  <input type="text" id="username" name="username" required
+    class="w-full border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
+    placeholder="Enter username">
+</div>
+
+<!-- Email (auto-filled) -->
+<div>
+  <label for="email" class="block text-gray-700 font-semibold mb-1">Email</label>
+  <input type="email" id="email" name="email" required readonly
+    class="w-full border-gray-300 rounded-lg p-2 bg-gray-100"
+    placeholder="Employee email will auto-fill">
+</div>
+
+<script>
+document.getElementById('employee_id').addEventListener('change', function() {
+    let selected = this.options[this.selectedIndex];
+    let email = selected.getAttribute('data-email');
+    document.getElementById('email').value = email || '';
+});
+</script>
 
       <!-- Password -->
       <div class="relative">
@@ -260,7 +332,7 @@ if (in_array($roles, ['Admin', 'Manager'])):
 
   <!-- Image Preview -->
   <div class="mb-2">
-    <img id="profile_preview" src="/uploads/reference_image/placeholder.jpg" 
+    <img id="profile_preview" src="/public_html/picture/placeholder.jpg" 
          class="w-32 h-32 rounded-full object-cover border" 
          alt="Profile Preview">
   </div>
@@ -415,7 +487,7 @@ cropBtn.addEventListener('click', () => {
 <!-- Form submit button -->
 <div class="text-center mt-4">
   <button type="submit" 
-          class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
+          class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">
     Create Account
   </button>
 </div>

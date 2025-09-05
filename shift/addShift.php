@@ -9,7 +9,7 @@ ini_set('display_errors', 1);
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Time and Attendance</title>
+  <title>Shift and Schedule</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="icon" type="image/png" href="../picture/logo2.png" />
@@ -52,7 +52,7 @@ include 'shiftnavbar.php';
 ?>
 
 <div class="bg-white shadow-md rounded-2xl p-10 w-full mx-auto mt-10 mb-10">
-    <h2 class="text-2xl font-bold mb-6">Manage Shifts (Add/Edit/Delete)</h2>
+    <h2 class="text-2xl font-bold mb-6">Manage Shifts</h2>
 
 <?php
 include __DIR__ . '/../dbconnection/mainDB.php';
@@ -154,7 +154,7 @@ $shifts = $shiftConn->query("SELECT * FROM shifts ORDER BY start_time");
         <label class="font-medium">Overnight Shift</label>
     </div>
     <div class="md:col-span-2 flex justify-end">
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">➕ Add Shift</button>
+        <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">➕ Add Shift</button>
     </div>
 </form>
 <div class="overflow-x-auto">
@@ -182,8 +182,8 @@ $shifts = $shiftConn->query("SELECT * FROM shifts ORDER BY start_time");
                 <td class="py-2 px-3 border text-sm md:text-base"><?= $s['break_minutes'] ?> min</td>
                 <td class="py-2 px-3 border text-sm md:text-base"><?= $s['is_overnight'] ? 'Yes' : 'No' ?></td>
                 <td class="py-2 px-3 border text-sm md:text-base space-x-2">
-                    <button type="button" onclick="openEditModal('<?= $s['shift_id'] ?>','<?= htmlspecialchars($s['shift_code'],ENT_QUOTES) ?>','<?= htmlspecialchars($s['name'],ENT_QUOTES) ?>','<?= $s['start_time'] ?>','<?= $s['end_time'] ?>','<?= $s['break_minutes'] ?>','<?= $s['is_overnight'] ?>')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm">✏️ Edit</button>
-                    <button type="button" onclick="openDeleteModal('<?= $s['shift_id'] ?>','<?= htmlspecialchars($s['name'],ENT_QUOTES) ?>')" class="text-red-600 hover:text-red-800 text-xs md:text-sm">🗑️ Delete</button>
+                    <button type="button" onclick="openEditModal('<?= $s['shift_id'] ?>','<?= htmlspecialchars($s['shift_code'],ENT_QUOTES) ?>','<?= htmlspecialchars($s['name'],ENT_QUOTES) ?>','<?= $s['start_time'] ?>','<?= $s['end_time'] ?>','<?= $s['break_minutes'] ?>','<?= $s['is_overnight'] ?>')" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto"> Edit</button>
+                    <button type="button" onclick="openDeleteModal('<?= $s['shift_id'] ?>','<?= htmlspecialchars($s['name'],ENT_QUOTES) ?>')" class="bg-red-500 px-2 py-1 rounded text-white"> Delete</button>
                 </td>
             </tr>
         <?php endwhile; ?>

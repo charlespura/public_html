@@ -135,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <input type="number" name="total_days" class="w-full border p-2 rounded" required>
                     </div>
                     <div class="col-span-3 flex justify-end mt-4">
-                        <button type="submit" name="assign_balance" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Assign / Update Balance</button>
+                        <button type="submit" name="assign_balance" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">Assign / Update Balance</button>
                     </div>
                 </form>
             </div>

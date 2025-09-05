@@ -11,7 +11,7 @@ ini_set('display_errors', 1);
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Time and Attendance</title>
+  <title>Shift and Schedule</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="icon" type="image/png" href="../picture/logo2.png" />
@@ -226,7 +226,7 @@ select { padding:5px; width:100%; }
   </div>
   <input type="hidden" name="view" value="week">
   <button type="submit"
-    class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+    class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">
     Show Week
   </button>
 </form>
@@ -258,34 +258,59 @@ if (!empty($days)) {
 }
 ?>
 
-<!-- Schedule Table -->
+<!-- Zoom Button -->
 <?php if($selected_role && $employees->num_rows>0): ?>
-<div class="overflow-x-auto bg-white shadow rounded-lg">
-  <table class="min-w-full border-collapse">
+<div class="flex justify-between items-center mb-2">
+  <h2 class="font-semibold text-lg">Schedule</h2>
+
+  <!-- Button with Zoomable SVG + Tooltip -->
+  <button onclick="openZoom()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded flex items-center justify-center">
+    
+    <!-- Zoomable SVG with tooltip -->
+    <div class="relative group">
+      <svg id="zoom" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6 cursor-pointer">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+      </svg>
+
+      <!-- Tooltip -->
+      <span class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-700 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        Toggle Fullscreen
+      </span>
+    </div>
+
+  </button>
+</div>
+
+
+
+<!-- Schedule Table -->
+<div id="scheduleTable" class="bg-white shadow rounded-lg overflow-hidden">
+  <table class="table-fixed w-full border-collapse text-sm">
     <thead>
-      <tr class="bg-gray-100 text-sm">
-        <th class="px-4 py-2 text-left font-semibold">Employee</th>
+      <tr class="bg-gray-100">
+        <th class="px-2 py-2 text-left font-semibold w-32">Employee</th>
         <?php foreach($days as $day): ?>
-          <th class="px-4 py-2 text-center font-semibold">
+          <th class="px-2 py-2 text-center font-semibold w-[12%]">
             <?= date('D', strtotime($day)) ?><br>
             <span class="text-xs text-gray-500"><?= date('m/d', strtotime($day)) ?></span>
           </th>
         <?php endforeach; ?>
       </tr>
     </thead>
-    <tbody class="text-sm divide-y">
+    <tbody class="divide-y">
       <?php while($emp=$employees->fetch_assoc()): ?>
         <tr>
-          <td class="px-4 py-2 font-medium whitespace-nowrap"><?= htmlspecialchars($emp['fullname']) ?></td>
+          <td class="px-2 py-2 font-medium whitespace-nowrap"><?= htmlspecialchars($emp['fullname']) ?></td>
           <?php foreach($days as $day): 
             $shift_id = $schedules[$emp['employee_id']][$day] ?? '';
             $note_text = $notes[$emp['employee_id']][$day] ?? '';
             $isLeave = isset($leaves[$emp['employee_id']][$day]);
           ?>
-          <td class="px-2 py-2 text-center align-middle">
+          <td class="px-1 py-1 text-center align-middle">
             <div class="flex flex-col items-center gap-1">
               <select data-employee="<?= $emp['employee_id'] ?>" data-date="<?= $day ?>" onchange="saveShift(this)"
-                class="w-full sm:w-auto text-xs sm:text-sm p-1 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                class="w-full text-xs p-1 border rounded focus:ring-1 focus:ring-blue-500"
                 <?= $isLeave ? 'disabled' : '' ?>>
                 <?php if ($isLeave): ?>
                   <option value="" selected>On Leave</option>
@@ -313,6 +338,30 @@ if (!empty($days)) {
 <?php elseif($selected_role): ?>
 <p class="text-gray-600 italic">No employees found for this role.</p>
 <?php endif; ?>
+
+<!-- Zoom Modal -->
+<div id="zoomModal" class="fixed inset-0 bg-white z-50 hidden overflow-auto p-4">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="font-semibold text-xl">Zoomed Schedule</h2>
+    <button onclick="closeZoom()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Close</button>
+  </div>
+</div>
+
+<script>
+let scheduleTable = document.getElementById('scheduleTable');
+let zoomModal = document.getElementById('zoomModal');
+let originalParent = scheduleTable.parentNode; // keep original container
+
+function openZoom() {
+  zoomModal.appendChild(scheduleTable); // move table into modal
+  zoomModal.classList.remove('hidden');
+}
+
+function closeZoom() {
+  originalParent.appendChild(scheduleTable); // move table back to original place
+  zoomModal.classList.add('hidden');
+}
+</script>
 
 
 
@@ -528,7 +577,6 @@ while($row = $resLeaves->fetch_assoc()){
 
 
 
-
 <?php if($employee): ?>
 <div class="bg-white shadow rounded-lg">
   <!-- Desktop view (hidden on small screens) -->
@@ -552,25 +600,19 @@ while($row = $resLeaves->fetch_assoc()){
               $shift_id = $schedules[$employee['employee_id']][$day] ?? '';
               $note_text = $notes[$employee['employee_id']][$day] ?? '';
               $isLeave = isset($leaves[$employee['employee_id']][$day]);
+              $shiftText = $isLeave ? 'On Leave' : ($shift_id ? $shiftsArray[$shift_id]['shift_code'].' ('.$shiftsArray[$shift_id]['start_time'].'-'.$shiftsArray[$shift_id]['end_time'].')' : 'Off');
           ?>
           <td class="px-2 py-2 text-center align-middle">
             <div class="flex flex-col items-center gap-1">
-              <select class="w-full text-xs sm:text-sm p-1 border rounded-lg focus:ring-2 focus:ring-blue-500" disabled>
-                  <?php if($isLeave): ?>
-                      <option selected>On Leave</option>
-                  <?php else: ?>
-                      <option <?= $shift_id==''?'selected':'' ?>>Off</option>
-                      <?php foreach($shiftsArray as $s): ?>
-                          <option value="<?= $s['shift_id'] ?>" <?= $shift_id==$s['shift_id']?'selected':'' ?>>
-                              <?= $s['shift_code'] ?> (<?= $s['start_time'] ?>-<?= $s['end_time'] ?>)
-                          </option>
-                      <?php endforeach; ?>
-                  <?php endif; ?>
-              </select>
+              <span class="text-xs sm:text-sm p-1 border rounded-lg bg-gray-50 w-full">
+                <?= $shiftText ?>
+              </span>
+              <?php if($note_text): ?>
               <button type="button" class="text-blue-500 hover:text-blue-700 text-lg"
                   onclick="openNoteModal('<?= $employee['employee_id'] ?>','<?= $day ?>','<?= htmlspecialchars($note_text,ENT_QUOTES) ?>')">
                   📝
               </button>
+              <?php endif; ?>
             </div>
           </td>
           <?php endforeach; ?>
@@ -578,6 +620,9 @@ while($row = $resLeaves->fetch_assoc()){
       </tbody>
     </table>
   </div>
+</div>
+
+
 
   <!-- Mobile stacked view (hidden on desktop) -->
   <div class="block md:hidden p-4 space-y-4">

@@ -7,10 +7,22 @@ ini_set('display_errors', 1);
 
 
 <?php
-// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Make sure user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../index.php");
+    exit;
+}
+
+// Always set these before using them
+$roles = $_SESSION['roles'] ?? 'Employee';          
+$loggedInUserId = $_SESSION['employee_id'] ?? null; 
+$loggedInUserName = $_SESSION['user_name'] ?? 'Guest';
+$approver = $loggedInUserId; // keep for consistency
+
 
 // Now we can safely get the logged-in employee
 $approver = $_SESSION['employee_id'] ?? null;
@@ -29,35 +41,26 @@ $shiftConn = $conn;
 // ==========================
 $message = '';
 $messageType = '';
-
-// ==========================
-// ADD LEAVE REQUEST
-// ==========================
-
 // ==========================
 // ADD LEAVE REQUEST
 // ==========================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_leave_request'])) {
 
-    // Make sure all expected POST values exist
     $employee_id = $_POST['employee_id'] ?? '';
     $leave_type_id = isset($_POST['leave_type_id']) ? intval($_POST['leave_type_id']) : 0;
     $start_date = $_POST['start_date'] ?? '';
     $end_date = $_POST['end_date'] ?? '';
     $reason = isset($_POST['reason']) ? trim($_POST['reason']) : '';
 
-    // Validate required fields
     if (empty($employee_id) || $leave_type_id === 0 || empty($start_date) || empty($end_date)) {
         $message = "Please fill in all required fields.";
         $messageType = "error";
     } else {
-        // Convert to timestamps
         $start_ts = strtotime($start_date);
         $end_ts = strtotime($end_date);
         $today_ts = strtotime(date('Y-m-d'));
         $max_ts = strtotime('+1 year', $today_ts);
 
-        // Check if dates are within 1 year
         if ($start_ts === false || $end_ts === false) {
             $message = "Invalid start or end date.";
             $messageType = "error";
@@ -82,14 +85,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_leave_request']))
                 $message = "Requested leave days ($days) exceed the maximum allowed ($max_days) for this leave type.";
                 $messageType = "error";
             } else {
-                // Insert leave request
-                $stmt = $shiftConn->prepare("INSERT INTO leave_requests 
-                    (employee_id, leave_type_id, start_date, end_date, total_days, reason) 
-                    VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("sissis", $employee_id, $leave_type_id, $start_date, $end_date, $days, $reason);
+                // Check if logged-in user is admin or manager
+                $isAutoApprove = in_array($roles, ['Admin', 'Manager']);
+
+                if ($isAutoApprove) {
+                    // Auto approve
+                    $stmt = $shiftConn->prepare("
+                        INSERT INTO leave_requests 
+                        (employee_id, leave_type_id, start_date, end_date, total_days, reason, status, approved_by, approved_date) 
+                        VALUES (?, ?, ?, ?, ?, ?, 'Approved', ?, NOW())
+                    ");
+                    $stmt->bind_param("sississ", $employee_id, $leave_type_id, $start_date, $end_date, $days, $reason, $loggedInUserId);
+                } else {
+                    // Regular request (pending)
+                    $stmt = $shiftConn->prepare("
+                        INSERT INTO leave_requests 
+                        (employee_id, leave_type_id, start_date, end_date, total_days, reason, status) 
+                        VALUES (?, ?, ?, ?, ?, ?, 'Pending')
+                    ");
+                    $stmt->bind_param("sissis", $employee_id, $leave_type_id, $start_date, $end_date, $days, $reason);
+                }
 
                 if ($stmt->execute()) {
-                    $message = "Leave request submitted successfully!";
+                    $message = $isAutoApprove 
+                        ? "Leave request submitted and auto-approved!" 
+                        : "Leave request submitted successfully!";
                     $messageType = "success";
                 } else {
                     $message = "Error: " . $shiftConn->error;
@@ -100,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_leave_request']))
         }
     }
 }
+
 
 // ==========================
 // UPDATE STATUS (Approve/Reject/Cancel)
@@ -150,9 +171,18 @@ if (isset($_GET['delete_id'])) {
 // ==========================
 // FETCH EMPLOYEES & LEAVE TYPES
 // ==========================
-$employees = $shiftConn->query("SELECT employee_id, first_name, last_name FROM hr3_system.employees ORDER BY first_name")->fetch_all(MYSQLI_ASSOC);
+
+
+// Employees (include gender)
+$employees = $shiftConn->query("
+    SELECT employee_id, first_name, last_name, gender 
+    FROM hr3_system.employees 
+    ORDER BY first_name
+")->fetch_all(MYSQLI_ASSOC);
+
+// Leave Types (include gender)
 $leaveTypes = $shiftConn->query("
-    SELECT leave_type_id, leave_name, description, max_days_per_year 
+    SELECT leave_type_id, leave_name, description, max_days_per_year, gender
     FROM leave_types 
     ORDER BY leave_name
 ")->fetch_all(MYSQLI_ASSOC);
@@ -230,22 +260,98 @@ $requests = $shiftConn->query("
 if (in_array($roles, ['Admin', 'Manager'])): 
 ?>
 
-
 <!-- Leave Assign -->
 <div class="bg-white shadow rounded-2xl p-6">
   <h3 class="text-lg font-semibold mb-4">Assign Leave</h3>
   <form method="POST" class="grid grid-cols-2 gap-4">
-  <div>
-  <label class="block">Employee</label>
-  <input type="text" id="employeeInput" class="w-full border p-2 rounded" placeholder="Type employee name..." autocomplete="off" required>
-  <div id="suggestions" class="border rounded mt-1 max-h-40 overflow-auto hidden"></div>
+    <!-- Employee input -->
+    <div>
+      <label class="block">Employee</label>
+      <input type="text" id="employeeInput" class="w-full border p-2 rounded" placeholder="Type employee name..." autocomplete="off" required>
+      <div id="suggestions" class="border rounded mt-1 max-h-40 overflow-auto hidden"></div>
+      <p id="employeeGender" class="mt-1 text-sm text-gray-600 hidden"></p> <!-- 🔥 Gender shows here -->
+    </div>
+
+    <!-- Leave Type -->
+    <div>
+      <label class="block">Leave Type</label>
+      <select id="leaveTypeSelect" name="leave_type_id" class="w-full border p-2 rounded" required>
+        <option value="">Select Type</option>
+        <!-- Options injected by JS -->
+      </select>
+    </div>
+
+    <!-- Leave Details -->
+    <div class="col-span-2 mt-2">
+      <div id="leaveDetails" class="p-3 border rounded bg-gray-50 hidden">
+        <p><strong>Description:</strong> <span id="leaveDescription"></span></p>
+        <p><strong>Max Days per Year:</strong> <span id="leaveMaxDays"></span></p>
+      </div>
+    </div>
+
+    <!-- Dates -->
+    <div>
+      <label class="block">Start Date</label>
+      <input type="date" name="start_date" class="w-full border p-2 rounded" required>
+    </div>
+    <div>
+      <label class="block">End Date</label>
+      <input type="date" name="end_date" class="w-full border p-2 rounded" required>
+    </div>
+
+    <!-- Reason -->
+    <div class="col-span-2">
+      <label class="block">Reason</label>
+      <textarea name="reason" class="w-full border p-2 rounded"></textarea>
+    </div>
+
+    <!-- Submit -->
+    <div class="col-span-2 flex justify-end">
+      <button type="submit" name="add_leave_request" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">Assign Leave</button>
+    </div>
+  </form>
 </div>
 
 <script>
-  const employees = <?php echo json_encode($employees); ?>; // pass PHP array to JS
+  // Employees & leave types from PHP
+  const employees = <?php echo json_encode($employees); ?>; 
+  const leaveTypes = <?php echo json_encode($leaveTypes); ?>; 
+
   const input = document.getElementById('employeeInput');
   const suggestions = document.getElementById('suggestions');
+  const empGenderEl = document.getElementById('employeeGender');
 
+  const leaveTypeSelect = document.getElementById('leaveTypeSelect');
+  const leaveDetails = document.getElementById('leaveDetails');
+  const leaveDescription = document.getElementById('leaveDescription');
+  const leaveMaxDays = document.getElementById('leaveMaxDays');
+
+  // 🔥 Populate leave type dropdown based on gender
+  function populateLeaveTypes(empGender) {
+    const genderNorm = (empGender || "Both").toLowerCase().trim();
+    leaveTypeSelect.innerHTML = '<option value="">Select Type</option>'; // reset
+
+    let added = 0;
+    leaveTypes.forEach(lt => {
+      const ltGender = (lt.gender || "Both").toLowerCase().trim();
+
+      if (ltGender === "both" || ltGender === genderNorm) {
+        const option = document.createElement("option");
+        option.value = lt.leave_type_id;
+        option.textContent = lt.leave_name;
+        option.dataset.description = lt.description;
+        option.dataset.maxdays = lt.max_days_per_year;
+        leaveTypeSelect.appendChild(option);
+        added++;
+      }
+    });
+
+    // reset leave details
+    leaveDetails.classList.add('hidden');
+    console.log("Leave options added:", added);
+  }
+
+  // Employee search
   input.addEventListener('input', () => {
     const value = input.value.toLowerCase();
     suggestions.innerHTML = '';
@@ -255,7 +361,7 @@ if (in_array($roles, ['Admin', 'Manager'])):
       return;
     }
 
-    const matches = employees.filter(emp => 
+    const matches = employees.filter(emp =>
       (emp.first_name + ' ' + emp.last_name).toLowerCase().includes(value)
     );
 
@@ -271,9 +377,10 @@ if (in_array($roles, ['Admin', 'Manager'])):
       div.addEventListener('click', () => {
         input.value = emp.first_name + ' ' + emp.last_name;
         suggestions.classList.add('hidden');
-        // Optional: store the employee_id in a hidden input
+
+        // Hidden employee_id
         let hiddenInput = document.getElementById('employee_id');
-        if(!hiddenInput){
+        if (!hiddenInput) {
           hiddenInput = document.createElement('input');
           hiddenInput.type = 'hidden';
           hiddenInput.name = 'employee_id';
@@ -281,6 +388,13 @@ if (in_array($roles, ['Admin', 'Manager'])):
           input.parentNode.appendChild(hiddenInput);
         }
         hiddenInput.value = emp.employee_id;
+
+        // 🔥 Show employee gender
+        empGenderEl.textContent = "Gender: " + (emp.gender || "Not specified");
+        empGenderEl.classList.remove('hidden');
+
+        // 🔥 Populate leave types by employee gender
+        populateLeaveTypes(emp.gender);
       });
       suggestions.appendChild(div);
     });
@@ -294,49 +408,20 @@ if (in_array($roles, ['Admin', 'Manager'])):
       suggestions.classList.add('hidden');
     }
   });
+
+  // Show leave details on change
+  leaveTypeSelect.addEventListener('change', () => {
+    const selectedOption = leaveTypeSelect.selectedOptions[0];
+    if (selectedOption && selectedOption.value) {
+      leaveDescription.textContent = selectedOption.dataset.description;
+      leaveMaxDays.textContent = selectedOption.dataset.maxdays;
+      leaveDetails.classList.remove('hidden');
+    } else {
+      leaveDetails.classList.add('hidden');
+    }
+  });
 </script>
 
-    <div>
-      <label class="block">Leave Type</label>
-      <select id="leaveTypeSelect" name="leave_type_id" class="w-full border p-2 rounded" required>
-        <option value="">Select Type</option>
-     <?php foreach ($leaveTypes as $lt): ?>
-<option 
-    value="<?= htmlspecialchars($lt['leave_type_id'] ?? '') ?>" 
-    data-description="<?= htmlspecialchars($lt['description'] ?? '') ?>"
-    data-maxdays="<?= htmlspecialchars($lt['max_days_per_year'] ?? '') ?>"
->
-    <?= htmlspecialchars($lt['leave_name'] ?? '') ?>
-</option>
-<?php endforeach; ?>
-
-      </select>
-    </div>
-
-    <div class="col-span-2 mt-2">
-      <div id="leaveDetails" class="p-3 border rounded bg-gray-50 hidden">
-        <p><strong>Description:</strong> <span id="leaveDescription"></span></p>
-        <p><strong>Max Days per Year:</strong> <span id="leaveMaxDays"></span></p>
-      </div>
-    </div>
-
-    <div>
-      <label class="block">Start Date</label>
-      <input type="date" name="start_date" class="w-full border p-2 rounded" required>
-    </div>
-    <div>
-      <label class="block">End Date</label>
-      <input type="date" name="end_date" class="w-full border p-2 rounded" required>
-    </div>
-    <div class="col-span-2">
-      <label class="block">Reason</label>
-      <textarea name="reason" class="w-full border p-2 rounded"></textarea>
-    </div>
-    <div class="col-span-2 flex justify-end">
-      <button type="submit" name="add_leave_request" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Assign Leave</button>
-    </div>
-  </form>
-</div>
 
 <script>
   const leaveSelect = document.getElementById('leaveTypeSelect');
@@ -453,23 +538,32 @@ $shiftConn = $conn;
 // Message feedback
 $message = '';
 $messageType = '';
-
-// ==========================
-// ADD LEAVE REQUEST (for Employee)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_leave'])) {
 
-    if ($roles !== 'Employee') {
-        $message = "Only employees can request leave!";
+    $leave_type_id = intval($_POST['leave_type_id']);
+    $start_date = $_POST['start_date'];
+    $end_date = $_POST['end_date'];
+    $reason = trim($_POST['reason']);
+
+    // Calculate total days
+    $start_ts = strtotime($start_date);
+    $end_ts = strtotime($end_date);
+    $days = ($end_ts - $start_ts) / (60*60*24) + 1;
+
+    // Get max days for selected leave type
+    $stmt = $shiftConn->prepare("SELECT max_days_per_year FROM leave_types WHERE leave_type_id = ?");
+    $stmt->bind_param("i", $leave_type_id);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
+    $max_days = $result['max_days_per_year'] ?? 0;
+    $stmt->close();
+
+    // Check max days
+    if ($days > $max_days) {
+        $message = "Requested leave days ($days) exceed the maximum allowed ($max_days) for this leave type.";
         $messageType = "error";
     } else {
-
-        $leave_type_id = intval($_POST['leave_type_id']);
-        $start_date = $_POST['start_date'];
-        $end_date = $_POST['end_date'];
-        $reason = trim($_POST['reason']);
-
-        $days = (strtotime($end_date) - strtotime($start_date)) / (60*60*24) + 1;
-
+        // Insert leave request
         $stmt = $shiftConn->prepare("INSERT INTO leave_requests 
             (employee_id, leave_type_id, start_date, end_date, total_days, reason, status) 
             VALUES (?, ?, ?, ?, ?, ?, 'Pending')");
@@ -486,12 +580,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_leave'])) {
     }
 }
 
-// Fetch leave types for dropdown
+
 $leaveTypes = $shiftConn->query("
-    SELECT leave_type_id, leave_name, description, max_days_per_year 
-    FROM leave_types 
+    SELECT leave_type_id, leave_name, description, max_days_per_year, gender
+    FROM leave_types
     ORDER BY leave_name
 ")->fetch_all(MYSQLI_ASSOC);
+
 
 // ==========================
 // FETCH EMPLOYEE LEAVE REQUESTS
@@ -506,7 +601,16 @@ $requests = $shiftConn->query("
 ")->fetch_all(MYSQLI_ASSOC);
 
 ?>
+<?php
+// Get logged-in employee's gender
+$employeeGenderResult = $shiftConn->query("
+    SELECT gender 
+    FROM hr3_system.employees 
+    WHERE employee_id = '{$employeeId}'
+")->fetch_assoc();
 
+$employeeGender = $employeeGenderResult['gender'] ?? 'Both';
+?>
 <div class="max-w-xl mx-auto bg-white p-6 rounded shadow mb-6">
     <h2 class="text-xl font-bold mb-4">Request Leave</h2>
 
@@ -522,16 +626,7 @@ $requests = $shiftConn->query("
             <label class="block mb-1">Leave Type</label>
             <select id="leaveTypeSelect" name="leave_type_id" class="w-full border p-2 rounded" required>
                 <option value="">Select Type</option>
-                <?php foreach ($leaveTypes as $lt): ?>
-                    <option 
-                        value="<?= $lt['leave_type_id'] ?>" 
-                        data-maxdays="<?= $lt['max_days_per_year'] ?? 0 ?>"
-                    >
-                        <?= htmlspecialchars($lt['leave_name']) ?>
-                    </option>
-                <?php endforeach; ?>
             </select>
-            <!-- Max Days Display -->
             <p id="maxDaysDisplay" class="mt-1 text-sm text-gray-600 hidden">
                 Max Days per Year: <span id="maxDaysValue"></span>
             </p>
@@ -550,7 +645,7 @@ $requests = $shiftConn->query("
             <textarea name="reason" class="w-full border p-2 rounded"></textarea>
         </div>
         <div class="text-right">
-            <button type="submit" name="request_leave" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit Request</button>
+            <button type="submit" name="request_leave" class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">Submit Request</button>
         </div>
     </form>
 </div>
@@ -560,11 +655,40 @@ const leaveSelect = document.getElementById('leaveTypeSelect');
 const maxDaysDisplay = document.getElementById('maxDaysDisplay');
 const maxDaysValue = document.getElementById('maxDaysValue');
 
+// Employee gender from PHP
+const employeeGender = "<?= strtolower($employeeGender) ?>";
+
+// Leave types from PHP
+const leaveTypes = <?= json_encode($leaveTypes) ?>;
+
+// Populate leave types based on gender
+function populateLeaveTypes() {
+    leaveSelect.innerHTML = '<option value="">Select Type</option>';
+
+    leaveTypes.forEach(lt => {
+        const ltGender = (lt.gender || 'Both').toLowerCase().trim();
+
+        if (ltGender === 'both' || ltGender === employeeGender) {
+            const option = document.createElement('option');
+            option.value = lt.leave_type_id;
+            option.textContent = lt.leave_name;
+            option.dataset.maxdays = lt.max_days_per_year;
+            leaveSelect.appendChild(option);
+        }
+    });
+
+    maxDaysDisplay.classList.add('hidden');
+    maxDaysValue.textContent = '';
+}
+
+// Populate leave types on page load
+populateLeaveTypes();
+
+// Update max days when a leave type is selected
 leaveSelect.addEventListener('change', () => {
     const selectedOption = leaveSelect.selectedOptions[0];
     if (selectedOption.value) {
-        const maxDays = selectedOption.dataset.maxdays || 0;
-        maxDaysValue.textContent = maxDays;
+        maxDaysValue.textContent = selectedOption.dataset.maxdays || 0;
         maxDaysDisplay.classList.remove('hidden');
     } else {
         maxDaysDisplay.classList.add('hidden');
@@ -572,7 +696,6 @@ leaveSelect.addEventListener('change', () => {
     }
 });
 </script>
-
 
 <!-- ========================== -->
 <!-- Leave Requests Table -->

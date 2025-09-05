@@ -316,7 +316,7 @@ document.getElementById('closeImagePreview').addEventListener('click', function(
             <td class="p-2 flex space-x-2 justify-center">
               <button 
                 onclick='openEditModal(<?= json_encode($row) ?>)' 
-                class="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600">
+                class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">
                 Edit
               </button>
               <button 
