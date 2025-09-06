@@ -17,7 +17,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // Get user info from session safely
-$roles = $_SESSION['roles'] ?? 'Employee';          // role for sidebar
+$roles = $_SESSION['roles'] ?? 'Employee';   
+       // role for sidebar
+       
 $loggedInUserId = $_SESSION['employee_id'] ?? null; // employee UUID
 $loggedInUserName = $_SESSION['user_name'] ?? 'Guest'; // display name
 
@@ -174,6 +176,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     
     <?php include 'chatbot.php'; ?>
+<?php include '../loader.php'; ?>
 
    <!-- Navigation -->
 <?php

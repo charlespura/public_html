@@ -116,7 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['manual_submit'])) {
     // Step 1: Find schedule
     $sched = get_schedule($mainConn, $employee_id, $work_date);
     if (!$sched) {
-        set_flash_message("❌ No schedule found for employee on {$work_date}");
+        set_flash_message(" No schedule found for employee on {$work_date}");
     } else {
         $schedule_id = $sched['schedule_id'];
 
@@ -126,7 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['manual_submit'])) {
         $empStmt->execute();
         $empRes = $empStmt->get_result();
         if ($empRes->num_rows == 0) {
-            set_flash_message("❌ No user_id found for employee_id {$employee_id}");
+            set_flash_message(" No user_id found for employee_id {$employee_id}");
         } else {
             $user_id = $empRes->fetch_assoc()['user_id'];
 
@@ -155,8 +155,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['manual_submit'])) {
                 ");
                 $ins->bind_param('sssssd', $schedule_id, $user_id, $clockInDT, $clockOutDT, $remarks, $workedHours);
                 $message = $ins->execute()
-                    ? "✅ Attendance added for {$work_date}"
-                    : "❌ Insert Error: " . $ins->error;
+                    ? "Attendance added for {$work_date}"
+                    : " Insert Error: " . $ins->error;
                 set_flash_message($message);
             } else {
                 $upd = $mainConn->prepare("
@@ -167,8 +167,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['manual_submit'])) {
                 ");
                 $upd->bind_param('sssds', $clockInDT, $clockOutDT, $remarks, $workedHours, $attendance['attendance_id']);
                 $message = $upd->execute()
-                    ? "✅ Attendance updated for {$work_date}"
-                    : "❌ Update Error: " . $upd->error;
+                    ? "Attendance updated for {$work_date}"
+                    : " Update Error: " . $upd->error;
                 set_flash_message($message);
             }
         }
@@ -182,25 +182,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['manual_submit'])) {
 
 if (in_array($roles, ['Admin', 'Manager'])): 
 ?>
+<!-- Include jQuery and Select2 CSS/JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <!-- Manual Clock In/Out Form -->
 <div class="bg-white shadow-md rounded-2xl p-6 w-full mx-auto mt-10">
   <h2 class="text-xl font-bold mb-4">Manual Clock In/Out</h2>
-<?php if (!empty($_SESSION['flash_message'])): ?>
-<div class="mb-4 p-3 rounded-lg 
-  <?php echo strpos($_SESSION['flash_message'], '✅') !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
-  <?php 
-    echo $_SESSION['flash_message']; 
-    unset($_SESSION['flash_message']);
-  ?>
-</div>
-<?php endif; ?>
-
+  
+  <?php if (!empty($_SESSION['flash_message'])): ?>
+  <div class="mb-4 p-3 rounded-lg 
+    <?php echo strpos($_SESSION['flash_message'], '✅') !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
+    <?php 
+      echo $_SESSION['flash_message']; 
+      unset($_SESSION['flash_message']);
+    ?>
+  </div>
+  <?php endif; ?>
 
   <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <!-- Select Employee -->
     <div>
       <label class="block text-sm font-medium text-gray-700">Employee</label>
-      <select name="employee_id" class="w-full border rounded-lg p-2" required>
+      <select id="employee-select" name="employee_id" class="w-full border rounded-lg p-2" required>
         <option value="">Select Employee</option>
         <?php
         $empRes = $empConn->query("SELECT employee_id, CONCAT(first_name,' ',last_name) AS name FROM hr3_system.employees ORDER BY name");
@@ -243,6 +248,16 @@ if (in_array($roles, ['Admin', 'Manager'])):
     </div>
   </form>
 </div>
+
+<script>
+  $(document).ready(function() {
+    // Make the employee dropdown searchable
+    $('#employee-select').select2({
+      placeholder: "Select Employee",
+      allowClear: true
+    });
+  });
+</script>
 
 <?php
 // DB connections
@@ -573,12 +588,22 @@ $breakInTime = $latest['break_in'] ?? null;
 $breakOutTime = $latest['break_out'] ?? null;
 ?>
 
-<div class="overflow-x-auto">
-  <h2 class="text-xl font-semibold mb-4">My Attendance Log</h2>
-  <div class="mb-4">
-      <strong>Today's Clock In:</strong> <?= htmlspecialchars($clockInTime ?? 'Not Clocked In') ?><br>
-      <strong>Hours Worked So Far:</strong> <span id="liveHoursWorked">0 min</span>
+<div class="overflow-x-auto p-4 bg-gray-50 min-h-screen">
+  <h2 class="text-2xl font-bold mb-4 text-gray-800">My Attendance Log</h2>
+
+  <div class="mb-6 p-4 bg-white shadow rounded-lg border border-gray-200">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+              <span class="font-semibold text-gray-700">Today's Clock In:</span>
+              <span class="text-gray-900"><?= htmlspecialchars($clockInTime ?? 'Not Clocked In') ?></span>
+          </div>
+          <div>
+              <span class="font-semibold text-gray-700">Hours Worked So Far:</span>
+              <span id="liveHoursWorked" class="text-gray-900">0 min</span>
+          </div>
+      </div>
   </div>
+
 
   <script>
   const clockInTime = "<?= $clockInTime ?? '' ?>";
@@ -636,102 +661,106 @@ $breakOutTime = $latest['break_out'] ?? null;
       }
   });
   </script>
-
-  <form method="POST">
-  <table class="min-w-full divide-y divide-gray-200 table-auto">
-      <thead class="bg-gray-50">
-          <tr>
-              <th>Work Date</th>
-              <th>Clock In</th>
-              <th>Clock Out</th>
-              <th>Break In</th>
-              <th>Break Out</th>
-              <th>Break Actions</th>
-              <th>Clock In Photo</th>
-              <th>Clock Out Photo</th>
-              <th>Hours Worked</th>
-              <th>Remarks</th>
-          </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-      <?php
-      function formatHoursWorked($decimalHours){
-          if($decimalHours===null||$decimalHours==='') return '';
-          $totalMinutes = round($decimalHours*60);
-          $hours = floor($totalMinutes/60);
-          $minutes = $totalMinutes%60;
-          $text = '';
-          if($hours>0) $text .= $hours.' hr'.($hours>1?'s ':' ');
-          if($minutes>0) $text .= $minutes.' min';
-          if($hours==0 && $minutes==0) $text='0 min';
-          return $text;
-      }
-
-      if($result->num_rows>0):
-          while($row=$result->fetch_assoc()):
-      ?>
+  <form method="POST" class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 table-auto">
+          <thead class="bg-gray-100 sticky top-0 z-10">
               <tr>
-                  <td><?= htmlspecialchars($row['work_date'] ?? '') ?></td>
-                  <td><?= htmlspecialchars($row['clock_in'] ?? '') ?></td>
-                  <td><?= htmlspecialchars($row['clock_out'] ?? '') ?></td>
-                  <td><?= htmlspecialchars($row['break_in'] ?? 'Not Started') ?></td>
-                  <td><?= htmlspecialchars($row['break_out'] ?? 'Not Ended') ?></td>
-                  <td>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Work Date</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Clock In</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Clock Out</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Break In</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Break Out</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Break Actions</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Clock In Photo</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Clock Out Photo</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Hours Worked</th>
+                  <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Remarks</th>
+              </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+          <?php
+          function formatHoursWorked($decimalHours){
+              if($decimalHours===null||$decimalHours==='') return '';
+              $totalMinutes = round($decimalHours*60);
+              $hours = floor($totalMinutes/60);
+              $minutes = $totalMinutes%60;
+              $text = '';
+              if($hours>0) $text .= $hours.' hr'.($hours>1?'s ':' ');
+              if($minutes>0) $text .= $minutes.' min';
+              if($hours==0 && $minutes==0) $text='0 min';
+              return $text;
+          }
+
+          if($result->num_rows>0):
+              while($row=$result->fetch_assoc()):
+          ?>
+              <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap"><?= htmlspecialchars($row['work_date'] ?? '') ?></td>
+                  <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap"><?= htmlspecialchars($row['clock_in'] ?? '') ?></td>
+                  <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap"><?= htmlspecialchars($row['clock_out'] ?? '') ?></td>
+                  <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap"><?= htmlspecialchars($row['break_in'] ?? 'Not Started') ?></td>
+                  <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap"><?= htmlspecialchars($row['break_out'] ?? 'Not Ended') ?></td>
+                  <td class="px-4 py-2 text-sm whitespace-nowrap">
                       <?php if(!$row['break_in']): ?>
-                          <button type="submit" name="action" value="break_in" class="px-2 py-1 bg-blue-500 text-white rounded">Break In</button>
+                          <button type="submit" name="action" value="break_in" class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm">Break In</button>
                       <?php elseif(!$row['break_out']): ?>
-                          <button type="submit" name="action" value="break_out" class="px-2 py-1 bg-green-500 text-white rounded">Break Out</button>
+                          <button type="submit" name="action" value="break_out" class="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-sm">Break Out</button>
                       <?php else: ?>
-                          Completed
+                          <span class="text-gray-500 text-sm">Completed</span>
                       <?php endif; ?>
                   </td>
-               <td>
+               <td class="px-4 py-2 whitespace-nowrap">
     <?php if($row['clock_in_image']): ?>
         <img 
             src="/public_html/<?= htmlspecialchars(imageUrl($row['clock_in_image'])) ?>" 
-            class="h-16 w-16 object-cover rounded border cursor-pointer preview-img"
             data-src="/public_html/<?= htmlspecialchars(imageUrl($row['clock_in_image'])) ?>"
+            class="h-16 w-16 object-cover rounded border cursor-pointer preview-img"
             alt="Clock In Photo"
         >
-    <?php else: echo "No Photo"; endif; ?>
+    <?php else: ?>
+        <span class="text-gray-400 text-sm">No Photo</span>
+    <?php endif; ?>
 </td>
-<td>
+
+<td class="px-4 py-2 whitespace-nowrap">
     <?php if($row['clock_out_image']): ?>
         <img 
             src="/public_html/<?= htmlspecialchars(imageUrl($row['clock_out_image'])) ?>" 
-            class="h-16 w-16 object-cover rounded border cursor-pointer preview-img"
             data-src="/public_html/<?= htmlspecialchars(imageUrl($row['clock_out_image'])) ?>"
+            class="h-16 w-16 object-cover rounded border cursor-pointer preview-img"
             alt="Clock Out Photo"
         >
-    <?php else: echo "No Photo"; endif; ?>
+    <?php else: ?>
+        <span class="text-gray-400 text-sm">No Photo</span>
+    <?php endif; ?>
 </td>
 
-                  <td><?= htmlspecialchars(formatHoursWorked($row['hours_worked'])) ?></td>
-                  <td><?= htmlspecialchars($row['remarks'] ?? '') ?></td>
+                  <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap"><?= htmlspecialchars(formatHoursWorked($row['hours_worked'])) ?></td>
+                  <td class="px-4 py-2 text-sm text-gray-700"><?= htmlspecialchars($row['remarks'] ?? '') ?></td>
               </tr>
-      <?php
-          endwhile;
-      else: ?>
-          <tr>
-              <td colspan="10" class="text-center text-gray-500">No attendance records found.</td>
-          </tr>
-      <?php endif; ?>
-      </tbody>
-  </table>
+          <?php
+              endwhile;
+          else: ?>
+              <tr>
+                  <td colspan="10" class="text-center text-gray-500 py-4">No attendance records found.</td>
+              </tr>
+          <?php endif; ?>
+          </tbody>
+      </table>
+    </div>
   </form>
 </div>
 
 
-
-
-
-<!-- ✅ Reuse same modal for preview -->
+<!-- Image Preview Modal -->
 <div id="imagePreviewModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
   <div class="relative">
     <button id="closeImagePreview" class="absolute top-2 right-2 text-white text-3xl font-bold">&times;</button>
     <img id="imagePreview" src="" class="max-w-[90vw] max-h-[90vh] rounded shadow-lg" alt="Preview">
   </div>
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('imagePreviewModal');
@@ -743,20 +772,32 @@ document.addEventListener('DOMContentLoaded', function() {
         img.addEventListener('click', function() {
             modalImg.src = this.dataset.src;
             modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden'); // optional: prevent background scroll
         });
     });
 
     // Close modal
-    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modalImg.src = '';
+        document.body.classList.remove('overflow-hidden');
+    };
+
+    closeBtn.addEventListener('click', closeModal);
 
     // Close modal on outside click
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.add('hidden');
+        if (e.target === modal) closeModal();
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
     });
 });
 </script>
-
-
 
 
 

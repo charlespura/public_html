@@ -158,7 +158,7 @@ $result = $conn->query($sql);
         <?php endwhile; ?>
       </ul>
     <?php else: ?>
-      <p class="text-gray-400 text-center">✅ No employees on leave today</p>
+      <p class="text-gray-400 text-center">No employees on leave today</p>
     <?php endif; ?>
   </div>
 </div>

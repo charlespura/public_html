@@ -12,7 +12,7 @@ if (isset($_POST['send_reset'])) {
     $email = trim($_POST['email'] ?? '');
 
     if (!$email) {
-        $message = "❌ Please enter your email.";
+        $message = " Please enter your email.";
         $messageType = "error";
     } else {
         // Check if user exists locally
@@ -23,7 +23,7 @@ if (isset($_POST['send_reset'])) {
         $stmt->close();
 
         if (!$user) {
-            $message = "❌ No active user found with that email.";
+            $message = " No active user found with that email.";
             $messageType = "error";
         } else {
             // Firebase REST API: send password reset email
@@ -42,10 +42,10 @@ if (isset($_POST['send_reset'])) {
             curl_close($ch);
 
             if (isset($response['error'])) {
-                $message = "⚠️ Firebase error: " . $response['error']['message'];
+                $message = " Firebase error: " . $response['error']['message'];
                 $messageType = "error";
             } else {
-                $message = "✅ Reset link sent! Check your email and follow the link to reset your password.";
+                $message = "Reset link sent! Check your email and follow the link to reset your password.";
                 $messageType = "success";
             }
         }
@@ -59,13 +59,13 @@ if (isset($_POST['reset_password'])) {
     $confirmPassword = $_POST['confirm_password'] ?? '';
 
     if (!$oobCode || !$newPassword || !$confirmPassword) {
-        $message = "❌ All fields are required.";
+        $message = " All fields are required.";
         $messageType = "error";
     } elseif ($newPassword !== $confirmPassword) {
-        $message = "❌ Passwords do not match.";
+        $message = " Passwords do not match.";
         $messageType = "error";
     } elseif (strlen($newPassword) < 8) {
-        $message = "❌ Password must be at least 8 characters.";
+        $message = " Password must be at least 8 characters.";
         $messageType = "error";
     } else {
         // 🔹 Update password in Firebase
@@ -83,7 +83,7 @@ if (isset($_POST['reset_password'])) {
         curl_close($ch);
 
         if (isset($response['error'])) {
-            $message = "⚠️ Firebase error: " . $response['error']['message'];
+            $message = " Firebase error: " . $response['error']['message'];
             $messageType = "error";
         } else {
             $email = $response['email'] ?? null;
@@ -96,7 +96,7 @@ if (isset($_POST['reset_password'])) {
                 $stmt->execute();
                 $stmt->close();
 
-                $message = "✅ Password updated successfully! You can now login.";
+                $message = "Password updated successfully! You can now login.";
                 $messageType = "success";
             }
         }

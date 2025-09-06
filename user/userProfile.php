@@ -4,6 +4,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
+
+
 <?php
 // ================== DB Connections ==================
 include __DIR__ . '/../dbconnection/dbEmployee.php';
@@ -17,7 +19,7 @@ function deleteFromFirebase($firebaseUid) {
 
     $serviceAccountPath = __DIR__ . '/../firebase-admin-key.json';
     if (!file_exists($serviceAccountPath)) {
-        error_log("❌ Firebase service account file missing.");
+        error_log(" Firebase service account file missing.");
         return;
     }
     $serviceAccount = json_decode(file_get_contents($serviceAccountPath), true);
@@ -53,7 +55,7 @@ function deleteFromFirebase($firebaseUid) {
     $tokenData = json_decode($response, true);
 
     if (!isset($tokenData['access_token'])) {
-        error_log("❌ Firebase token error: " . $response);
+        error_log(" Firebase token error: " . $response);
         return;
     }
     $accessToken = $tokenData['access_token'];
@@ -77,9 +79,9 @@ function deleteFromFirebase($firebaseUid) {
 
     $resData = json_decode($response, true);
     if (isset($resData['error'])) {
-        error_log("❌ Firebase deletion failed: " . $response);
+        error_log(" Firebase deletion failed: " . $response);
     } else {
-        error_log("✅ Firebase user $firebaseUid deleted successfully.");
+        error_log("Firebase user $firebaseUid deleted successfully.");
     }
 }
 
@@ -155,10 +157,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
                 $stmt->execute();
                 $stmt->close();
             } else {
-                $imageUploadError = "⚠️ Failed to move uploaded image.";
+                $imageUploadError = " Failed to move uploaded image.";
             }
         } else {
-            $imageUploadError = "⚠️ Error uploading image. Error code: " . $_FILES['reference_image']['error'];
+            $imageUploadError = " Error uploading image. Error code: " . $_FILES['reference_image']['error'];
         }
     }
 
@@ -234,102 +236,98 @@ include 'userNavbar.php'; ?>
 
 
 
+<div class="bg-white shadow-md rounded-2xl p-6 md:p-10 w-full mx-auto mt-10 mb-10">
+    <h2 class="text-2xl font-bold mb-6">Employee Account</h2>
 
-<div class="bg-white shadow-md rounded-2xl p-10 w-full mx-auto mt-10 mb-10">
-    <h2 class="text-2xl font-bold mb-6"> Employee Account</h2>
+    <a href="createUser.php" class="inline-block mb-6">
+        <button class="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition">
+            Create Account
+        </button>
+    </a>
 
-    
-<a href="createUser.php" style="text-decoration: none;">
-  <button style="padding:10px 20px; background-color:#4CAF50; color:white; border:none; border-radius:5px; cursor:pointer;">
-    Create Account
-  </button>
-</a>
+    <div class="bg-white shadow-lg rounded-2xl p-4 md:p-6">
+        <h2 class="text-2xl font-bold mb-4">User Profiles</h2>
 
+        <!-- Responsive Table Wrapper -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-300 rounded-lg overflow-hidden">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="p-2 text-left">User ID</th>
+                        <th class="p-2 text-left">First Name</th>
+                        <th class="p-2 text-left">Last Name</th>
+                        <th class="p-2 text-left">Profile Image</th>
+                        <th class="p-2 text-left">Phone</th>
+                        <th class="p-2 text-left">Address</th>
+                        <th class="p-2 text-left">Timezone</th>
+                        <th class="p-2 text-left">Locale</th>
+                        <th class="p-2 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($row = $res->fetch_assoc()): ?>
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="p-2 whitespace-nowrap"><?= htmlspecialchars($row['user_id']) ?></td>
+                        <td class="p-2 whitespace-nowrap"><?= htmlspecialchars($row['first_name']) ?></td>
+                        <td class="p-2 whitespace-nowrap"><?= htmlspecialchars($row['last_name']) ?></td>
+                        <td class="p-2">
+                            <?php if (!empty($row['reference_image'])): ?>
+                            <img src="/public_html/<?= htmlspecialchars($row['reference_image']) ?>" 
+                                 alt="Profile Image" 
+                                 class="w-12 h-12 rounded-full object-cover cursor-pointer preview-img"
+                                 data-src="/public_html/<?= htmlspecialchars($row['reference_image']) ?>" />
+                            <?php else: ?>
+                            <span class="text-gray-400">No image</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="p-2 whitespace-nowrap"><?= !empty($row['phone']) ? htmlspecialchars($row['phone']) : '-' ?></td>
+                        <td class="p-2 whitespace-nowrap"><?= !empty($row['address']) ? htmlspecialchars($row['address']) : '-' ?></td>
+                        <td class="p-2 whitespace-nowrap"><?= htmlspecialchars($row['timezone']) ?></td>
+                        <td class="p-2 whitespace-nowrap"><?= htmlspecialchars($row['locale']) ?></td>
+                        <td class="p-2 flex flex-col sm:flex-row sm:space-x-2 gap-2 justify-center">
+                            <button 
+                                onclick='openEditModal(<?= json_encode($row) ?>)' 
+                                class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">
+                                Edit
+                            </button>
+                            <button 
+                                onclick="openDeleteModal('<?= $row['user_id'] ?>')" 
+                                class="px-3 py-2 rounded bg-red-500 text-white hover:bg-red-600 w-full sm:w-auto">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-
-
-  <div class="bg-white shadow-lg rounded-2xl p-6">
-    <h2 class="text-2xl font-bold mb-4">User Profiles</h2>
-    <table class="min-w-full border border-gray-300 rounded-lg overflow-hidden">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="p-2 text-left">User ID</th>
-          <th class="p-2 text-left">First Name</th>
-          <th class="p-2 text-left">Last Name</th>
-          <th class="p-2 text-left">Profile Image</th>
-
-          <th class="p-2 text-left">Phone</th>
-          <th class="p-2 text-left">Address</th>
-          <th class="p-2 text-left">Timezone</th>
-          <th class="p-2 text-left">Locale</th>
-          <th class="p-2 text-center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php while ($row = $res->fetch_assoc()): ?>
-          <tr class="border-t">
-            <td class="p-2"><?= htmlspecialchars($row['user_id']) ?></td>
-            <td class="p-2"><?= htmlspecialchars($row['first_name']) ?></td>
-            <td class="p-2"><?= htmlspecialchars($row['last_name']) ?></td>
-            <td class="p-2">
-<?php if (!empty($row['reference_image'])): ?>
-  <img src="/public_html/<?= htmlspecialchars($row['reference_image']) ?>" 
-       alt="Profile Image" 
-       class="w-12 h-12 rounded-full object-cover cursor-pointer preview-img"
-       data-src="/public_html/<?= htmlspecialchars($row['reference_image']) ?>" />
-<?php else: ?>
-  <span class="text-gray-400">No image</span>
-<?php endif; ?>
-<!-- Image Preview Modal -->
-<div id="imagePreviewModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
-  <div class="relative">
-    <button id="closeImagePreview" class="absolute top-2 right-2 text-white text-2xl">&times;</button>
-    <img id="imagePreview" src="" class="max-w-[90vw] max-h-[90vh] rounded shadow-lg" alt="Preview">
-  </div>
+    <!-- Image Preview Modal -->
+    <div id="imagePreviewModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="relative">
+            <button id="closeImagePreview" class="absolute top-2 right-2 text-white text-2xl">&times;</button>
+            <img id="imagePreview" src="" class="max-w-[90vw] max-h-[90vh] rounded shadow-lg" alt="Preview">
+        </div>
+    </div>
 </div>
+
 <script>
-  // Select all clickable images
-document.querySelectorAll('.preview-img').forEach(img => {
-  img.addEventListener('click', function() {
-    const src = this.getAttribute('data-src');
-    const modal = document.getElementById('imagePreviewModal');
-    const preview = document.getElementById('imagePreview');
-    preview.src = src;
-    modal.classList.remove('hidden');
-  });
-});
+    // Image Preview Logic
+    document.querySelectorAll('.preview-img').forEach(img => {
+        img.addEventListener('click', function() {
+            const src = this.getAttribute('data-src');
+            const modal = document.getElementById('imagePreviewModal');
+            const preview = document.getElementById('imagePreview');
+            preview.src = src;
+            modal.classList.remove('hidden');
+        });
+    });
 
-// Close modal
-document.getElementById('closeImagePreview').addEventListener('click', function() {
-  document.getElementById('imagePreviewModal').classList.add('hidden');
-});
-
+    document.getElementById('closeImagePreview').addEventListener('click', function() {
+        document.getElementById('imagePreviewModal').classList.add('hidden');
+    });
 </script>
-
-</td>
-
-          <td class="p-2"><?= !empty($row['phone']) ? htmlspecialchars($row['phone']) : '-' ?></td>
-<td class="p-2"><?= !empty($row['address']) ? htmlspecialchars($row['address']) : '-' ?></td>
-
-            <td class="p-2"><?= htmlspecialchars($row['timezone']) ?></td>
-            <td class="p-2"><?= htmlspecialchars($row['locale']) ?></td>
-            <td class="p-2 flex space-x-2 justify-center">
-              <button 
-                onclick='openEditModal(<?= json_encode($row) ?>)' 
-                class="bg-gray-800 hover:bg-gray-900 text-white hover:text-yellow-500 px-4 py-2 rounded w-full sm:w-auto">
-                Edit
-              </button>
-              <button 
-                onclick="openDeleteModal('<?= $row['user_id'] ?>')" 
-                class="px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600">
-                Delete
-              </button>
-            </td>
-          </tr>
-        <?php endwhile; ?>
-      </tbody>
-    </table>
-  </div>
 
   <!-- Edit Modal -->
    

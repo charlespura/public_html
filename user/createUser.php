@@ -89,11 +89,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("ss", $user_id, $employee_id);
         $stmt->execute();
 
-        $message = "✅ User account created successfully. Firebase Auth pending verification.";
+        $message = "User account created successfully. Firebase Auth pending verification.";
         $messageType = 'success';
 
     } catch (mysqli_sql_exception $e) {
-        $message = "❌ Error: " . $e->getMessage();
+        $message = " Error: " . $e->getMessage();
         $messageType = 'error';
     }
 }
@@ -497,90 +497,44 @@ cropBtn.addEventListener('click', () => {
   import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } 
     from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCQg9yf_oWKyDAE_WApgRnG3q-BEDL6bSc",
-    authDomain: "hr3login.firebaseapp.com",
-    projectId: "hr3login",
-    storageBucket: "hr3login.firebasestorage.app",
-    messagingSenderId: "232802988174",
-    appId: "1:232802988174:web:6baa6ef4d5eed11b9b99df",
-    measurementId: "G-VRP7EYSBZX"
-  };
+  async function initFirebase() {
+    const res = await fetch("/public_html/firebase-config.php");
+    const firebaseConfig = await res.json();
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-  document.querySelector("form").addEventListener("submit", async (e) => {
-    e.preventDefault(); // stop default submit
-    const form = e.target;
+    document.querySelector("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const email = form.email.value;
+      const password = form.password.value;
 
-    const email = form.email.value;
-    const password = form.password.value;
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-    try {
-      // ✅ Create Firebase Auth account
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+        await sendEmailVerification(user);
 
-      // ✅ Send email verification
-      await sendEmailVerification(user);
+        let uidInput = form.querySelector("input[name='firebase_uid']");
+        if (!uidInput) {
+          uidInput = document.createElement("input");
+          uidInput.type = "hidden";
+          uidInput.name = "firebase_uid";
+          form.appendChild(uidInput);
+        }
+        uidInput.value = user.uid;
 
-    //  alert("Firebase account created. Verification email sent!");
-
-      // ✅ Add Firebase UID to hidden input
-      let uidInput = form.querySelector("input[name='firebase_uid']");
-      if (!uidInput) {
-        uidInput = document.createElement("input");
-        uidInput.type = "hidden";
-        uidInput.name = "firebase_uid";
-        form.appendChild(uidInput);
+        form.submit();
+      } catch (error) {
+        alert("Firebase Auth Error: " + error.message);
       }
-      uidInput.value = user.uid;
+    });
+  }
 
-      // ✅ Submit form to PHP with firebase_uid included
-      form.submit();
-
-    } catch (error) {
-      alert("Firebase Auth Error: " + error.message);
-    }
-  });
+  initFirebase();
 </script>
 
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const passwordInput = document.getElementById("password");
-    const togglePassword = document.getElementById("togglePassword");
-    const eyeIcon = togglePassword.querySelector("i");
-
-    togglePassword.addEventListener("click", () => {
-      if (passwordInput.type === "password") {
-        passwordInput.type = "text";
-        eyeIcon.setAttribute("data-lucide", "eye-off");
-      } else {
-        passwordInput.type = "password";
-        eyeIcon.setAttribute("data-lucide", "eye");
-      }
-      lucide.createIcons();
-    });
-
-    const generatePassword = document.getElementById("generatePassword");
-
-    function generateStrongPassword(length = 12) {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=";
-      let password = "";
-      for (let i = 0; i < length; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return password;
-    }
-
-    generatePassword.addEventListener("click", () => {
-      const newPass = generateStrongPassword(12);
-      passwordInput.value = newPass;
-    });
-  });
-</script>
 
 
 <?php 

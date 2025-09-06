@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $shiftConn->prepare("INSERT INTO request_types (type_id, type_name, description, is_active, created_at, updated_at) VALUES (UUID(), ?, ?, ?, NOW(), NOW())");
             $stmt->bind_param("ssi", $type_name, $description, $is_active);
             if ($stmt->execute()) {
-                $message = "✅ Request type <b>$type_name</b> added successfully.";
+                $message = "Request type <b>$type_name</b> added successfully.";
                 $messageType = "success";
             }
         }
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $shiftConn->prepare("UPDATE request_types SET type_name=?, description=?, is_active=?, updated_at=NOW() WHERE type_id=?");
             $stmt->bind_param("ssis", $type_name, $description, $is_active, $type_id);
             if ($stmt->execute()) {
-                $message = "✅ Request type updated successfully.";
+                $message = "Request type updated successfully.";
                 $messageType = "success";
             }
         }
@@ -44,14 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $shiftConn->prepare("DELETE FROM request_types WHERE type_id=?");
             $stmt->bind_param("s", $type_id);
             if ($stmt->execute()) {
-                $message = "⚠️ Request type deleted.";
+                $message = " Request type deleted.";
             }
         }
     } catch (mysqli_sql_exception $e) {
         if ($e->getCode() == 1062) { // duplicate entry
-            $message = "⚠️ A request type with the same name already exists!";
+            $message = " A request type with the same name already exists!";
         } else {
-            $message = "❌ Database error: " . $e->getMessage();
+            $message = " Database error: " . $e->getMessage();
         }
     }
 }
@@ -61,9 +61,9 @@ $result = $shiftConn->query("SELECT * FROM request_types ORDER BY created_at DES
 ?>
 <?php
 if (!$result) {
-    echo "❌ Query error: " . $shiftConn->error;
+    echo " Query error: " . $shiftConn->error;
 } elseif ($result->num_rows === 0) {
-    echo "⚠️ No request types found in the database.";
+    echo " No request types found in the database.";
 }
 ?>
 
@@ -186,7 +186,7 @@ $result = $shiftConn->query("SELECT * FROM request_types ORDER BY created_at DES
             <?php else: ?>
                 <tr>
                     <td colspan="7" class="px-4 py-2 border text-yellow-600">
-                        ⚠️ No request types found in the database.
+                         No request types found in the database.
                     </td>
                 </tr>
             <?php endif; ?>

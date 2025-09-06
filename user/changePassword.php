@@ -18,13 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirmPassword = $_POST['confirm_password'] ?? '';
 
     if (!$currentPassword || !$newPassword || !$confirmPassword) {
-        $message = "❌ All fields are required";
+        $message = " All fields are required";
         $messageType = "error";
     } elseif ($newPassword !== $confirmPassword) {
-        $message = "❌ New password and confirmation do not match";
+        $message = " New password and confirmation do not match";
         $messageType = "error";
     } elseif (strlen($newPassword) < 8) {
-        $message = "❌ Password must be at least 8 characters long";
+        $message = " Password must be at least 8 characters long";
         $messageType = "error";
     } else {
         $user_id = $_SESSION['user_id'];
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row = $stmt->get_result()->fetch_assoc();
 
         if (!$row || !password_verify($currentPassword, $row['password_hash'])) {
-            $message = "❌ Current password is incorrect";
+            $message = " Current password is incorrect";
             $messageType = "error";
         } else {
             $email = $row['email'];
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             curl_close($ch);
 
             if (!isset($firebaseLogin['idToken'])) {
-                $message = "⚠️ Firebase login failed";
+                $message = " Firebase login failed";
                 $messageType = "error";
             } else {
                 $idToken = $firebaseLogin['idToken'];
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 curl_close($ch);
 
                 if (isset($updateResp['error'])) {
-                    $message = "⚠️ Firebase password update failed: " . $updateResp['error']['message'];
+                    $message = " Firebase password update failed: " . $updateResp['error']['message'];
                     $messageType = "error";
                 } else {
                  if (!isset($updateResp['error'])) {
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
    
 }
-                    $message = "✅ Password changed successfully. You will be logged out in 3 seconds.";
+                    $message = "Password changed successfully. You will be logged out in 3 seconds.";
                     $messageType = "success";
 
                     // Use JavaScript to destroy session after 3 seconds

@@ -163,7 +163,7 @@ function get_open_attendance(mysqli $db, string $schedule_id, string $user_id): 
 // RECEIVE IMAGE
 // ----------------------------------------------------
 if (!isset($_POST['current']) || empty($_POST['current'])) {
-    flash_and_redirect("❌ No image data received from webcam.");
+    flash_and_redirect(" No image data received from webcam.");
 }
 
 // Save temp image
@@ -179,7 +179,7 @@ $usersStmt->execute();
 $usersRes = $usersStmt->get_result();
 if ($usersRes->num_rows == 0) {
     if (file_exists($tempImage)) unlink($tempImage);
-    flash_and_redirect("❌ No registered users with reference images found.");
+    flash_and_redirect(" No registered users with reference images found.");
 }
 
 $matched = false;
@@ -206,7 +206,7 @@ while ($user = $usersRes->fetch_assoc()) {
 
 if (!$matched) {
     if (file_exists($tempImage)) unlink($tempImage);
-    flash_and_redirect("❌ Face not recognized!");
+    flash_and_redirect(" Face not recognized!");
 }
 
 // ----------------------------------------------------
@@ -221,7 +221,7 @@ $empStmt->execute();
 $empRes = $empStmt->get_result();
 if ($empRes->num_rows == 0) {
     if (file_exists($tempImage)) unlink($tempImage);
-    flash_and_redirect("❌ No employee record found for {$username}.");
+    flash_and_redirect(" No employee record found for {$username}.");
 }
 $employee_id = $empRes->fetch_assoc()['employee_id'];
 
@@ -231,7 +231,7 @@ $employee_id = $empRes->fetch_assoc()['employee_id'];
 $sched = get_today_or_overnight_schedule($mainConn, $employee_id);
 if (!$sched) {
     if (file_exists($tempImage)) unlink($tempImage);
-    flash_and_redirect("ℹ️ {$username} has no scheduled shift to clock for.");
+    flash_and_redirect(" {$username} has no scheduled shift to clock for.");
 }
 
 $schedule_id = $sched['schedule_id'];
@@ -255,12 +255,12 @@ if ($now < $shiftStart) {
 }
 if ($now > $shiftEnd) {
     if (file_exists($tempImage)) unlink($tempImage);
-    flash_and_redirect("❌ Too late to clock in. Your shift was " . $shiftStart->format('H:i:s') . " – " . $shiftEnd->format('H:i:s') . ".");
+    flash_and_redirect(" Too late to clock in. Your shift was " . $shiftStart->format('H:i:s') . " – " . $shiftEnd->format('H:i:s') . ".");
 }
 // Optional: enforce late cutoff (comment out if you allow clock-in anytime before shift end)
 if ($now > $graceEnd) {
     if (file_exists($tempImage)) unlink($tempImage);
-    flash_and_redirect("❌ You are late. Allowed clock-in until " . $graceEnd->format('H:i:s') . ".");
+    flash_and_redirect(" You are late. Allowed clock-in until " . $graceEnd->format('H:i:s') . ".");
 }
 
 // ----------------------------------------------------
@@ -287,16 +287,16 @@ if ($attendance === null) {
     ");
     $ins->bind_param('sss', $schedule_id, $user_id, $finalInPath);
     if ($ins->execute()) {
-        flash_and_redirect("✅ {$username} Clocked In! Shift: {$shift_name} ({$start_time}-{$end_time})");
+        flash_and_redirect("{$username} Clocked In! Shift: {$shift_name} ({$start_time}-{$end_time})");
     } else {
         if (file_exists($finalInPath)) unlink($finalInPath);
-        flash_and_redirect("❌ DB Error (Clock In): " . $ins->error);
+        flash_and_redirect(" DB Error (Clock In): " . $ins->error);
     }
 } else {
     // Attendance row exists
     if (!empty($attendance['clock_out'])) {
         if (file_exists($tempImage)) unlink($tempImage);
-        flash_and_redirect("ℹ️ {$username} already clocked out for this shift.");
+        flash_and_redirect(" {$username} already clocked out for this shift.");
     }
 
     // Clock OUT (must come after start, before end ideally, but you can relax this)
@@ -322,15 +322,15 @@ if ($attendance === null) {
     ");
     $upd->bind_param('sds', $finalOutPath, $workedHours, $attendance['attendance_id']);
     if ($upd->execute()) {
-        flash_and_redirect("✅ {$username} Clocked Out! Hours worked: " . round($workedHours, 2));
+        flash_and_redirect("{$username} Clocked Out! Hours worked: " . round($workedHours, 2));
     } else {
         if (file_exists($finalOutPath)) unlink($finalOutPath);
-        flash_and_redirect("❌ DB Error (Clock Out): " . $upd->error);
+        flash_and_redirect(" DB Error (Clock Out): " . $upd->error);
     }
 }
 
 // Final safety (shouldn’t reach here)
 if (file_exists($tempImage)) unlink($tempImage);
-flash_and_redirect("ℹ️ No action taken.");
+flash_and_redirect(" No action taken.");
 
 ?>

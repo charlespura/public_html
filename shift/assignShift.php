@@ -428,7 +428,7 @@ function saveNote(){
             notes: note
         })
     })
-    .then(res => res.json())   // ✅ parse JSON instead of text
+    .then(res => res.json())   // parse JSON instead of text
     .then(data => {
         const modal = document.getElementById('noteModal');
         const content = modal.querySelector('.modal-content');

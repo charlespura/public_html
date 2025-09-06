@@ -16,7 +16,7 @@ if (!$employee_id && !$ids) {
 // Only delete when confirmed
 if ($confirmed === "yes") {
     if ($ids) {
-        // ✅ Bulk delete
+        // Bulk delete
         $idArray = explode(",", $ids);
         $placeholders = implode(",", array_fill(0, count($idArray), "?"));
         $types = str_repeat("s", count($idArray));
@@ -24,7 +24,7 @@ if ($confirmed === "yes") {
         $stmt = $conn->prepare("DELETE FROM employees WHERE employee_id IN ($placeholders)");
         $stmt->bind_param($types, ...$idArray);
     } elseif ($employee_id) {
-        // ✅ Single delete
+        // Single delete
         $stmt = $conn->prepare("DELETE FROM employees WHERE employee_id = ?");
         $stmt->bind_param("s", $employee_id);
     }

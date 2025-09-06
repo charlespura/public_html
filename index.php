@@ -16,14 +16,16 @@ if ($username && $password) {
 
     // 1️⃣ Get user from DB
     $stmt = $conn->prepare("
-        SELECT u.user_id, u.username, u.email, u.password_hash, u.is_active, u.is_verified,
-               r.name AS role_name, e.employee_id, e.first_name, e.last_name
-        FROM users u
-        LEFT JOIN user_roles ur ON u.user_id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.role_id
-        LEFT JOIN hr3_system.employees e ON e.user_id = u.user_id
-        WHERE u.username = ? OR u.email = ?
-        LIMIT 1
+    SELECT u.user_id, u.username, u.email, u.password_hash, u.is_active, u.is_verified,
+       r.name AS role_name,
+       e.employee_id, e.first_name, e.last_name
+FROM users u
+LEFT JOIN user_roles ur ON u.user_id = ur.user_id
+LEFT JOIN roles r ON ur.role_id = r.role_id
+LEFT JOIN hr3_system.employees e ON e.user_id = u.user_id
+WHERE (u.username = ? OR u.email = ?) AND r.name IS NOT NULL
+LIMIT 1
+
     ");
     $stmt->bind_param("ss", $username, $username);
     $stmt->execute();
@@ -58,7 +60,7 @@ if ($username && $password) {
                 curl_close($ch);
 
                 if (isset($firebaseLogin['idToken'])) {
-                    // ✅ Firebase login success → update local password hash
+                    // Firebase login success → update local password hash
                     $newHash = password_hash($password, PASSWORD_BCRYPT);
                     $stmt = $conn->prepare("UPDATE users SET password_hash=? WHERE email=?");
                     $stmt->bind_param("ss", $newHash, $user['email']);
@@ -110,7 +112,7 @@ if ($username && $password) {
                     }
                 }
 
-                // ✅ Create session if email verified
+                // Create session if email verified
                 if ($emailVerified) {
                     $_SESSION['user_id'] = $user['user_id'];
                     $_SESSION['username'] = $user['username'];

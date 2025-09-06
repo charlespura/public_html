@@ -29,13 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirmPassword = $_POST['confirm_password'] ?? '';
 
     if (!$newPassword || !$confirmPassword) {
-        $message = "❌ All fields are required.";
+        $message = " All fields are required.";
         $messageType = "error";
     } elseif ($newPassword !== $confirmPassword) {
-        $message = "❌ Passwords do not match.";
+        $message = " Passwords do not match.";
         $messageType = "error";
     } elseif (strlen($newPassword) < 8) {
-        $message = "❌ Password must be at least 8 characters long.";
+        $message = " Password must be at least 8 characters long.";
         $messageType = "error";
     } else {
         $hash = password_hash($newPassword, PASSWORD_BCRYPT);
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         $stmt->close();
 
-        $message = "✅ Password updated successfully. You can now log in.";
+        $message = "Password updated successfully. You can now log in.";
         $messageType = "success";
     }
 }

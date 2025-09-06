@@ -110,7 +110,7 @@ session_start();
         <!-- Flash message -->
         <?php if (isset($_SESSION['flash_message'])): ?>
             <div id="flashMessage" class="mb-6 p-4 rounded-lg transition-opacity duration-1000 flash-message
-                        <?php echo (strpos($_SESSION['flash_message'], '✅') !== false) 
+                        <?php echo (strpos($_SESSION['flash_message'], '') !== false) 
                             ? 'bg-green-100 text-green-700 border border-green-200' 
                             : 'bg-red-100 text-red-700 border border-red-200'; ?>">
                 <?php echo $_SESSION['flash_message']; ?>

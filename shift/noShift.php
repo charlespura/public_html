@@ -160,7 +160,7 @@ if ($start_date && $end_date) {
                 </tbody>
             </table>
         <?php else: ?>
-            <p class="text-gray-600 italic">✅ All employees have shifts assigned between 
+            <p class="text-gray-600 italic">All employees have shifts assigned between 
                 <b><?php echo htmlspecialchars($start_date); ?></b> and 
                 <b><?php echo htmlspecialchars($end_date); ?></b>.
             </p>

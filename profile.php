@@ -39,6 +39,8 @@ if (!empty($_SESSION['user_id'])) {
     }
 }
 ?>
+<?php include '../loader.php'; ?>
+
 <!-- Right: User Info -->
 <div class="relative flex items-center gap-4" id="headerContainer">
 

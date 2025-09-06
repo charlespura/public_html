@@ -696,39 +696,69 @@ leaveSelect.addEventListener('change', () => {
     }
 });
 </script>
+<div class="max-w-4xl mx-auto p-4">
+  <h2 class="text-xl font-bold mb-4 text-gray-800">My Leave Requests</h2>
 
-<!-- ========================== -->
-<!-- Leave Requests Table -->
-<div class="max-w-4xl mx-auto bg-white p-6 rounded shadow">
-    <h2 class="text-xl font-bold mb-4">My Leave Requests</h2>
-    <table class="w-full border-collapse border">
-        <thead class="bg-gray-200">
-            <tr>
-                <th class="border px-3 py-2">#</th>
-                <th class="border px-3 py-2">Leave Type</th>
-                <th class="border px-3 py-2">Dates</th>
-                <th class="border px-3 py-2">Days</th>
-                <th class="border px-3 py-2">Status</th>
-                <th class="border px-3 py-2">Approved By</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($requests as $r): ?>
-                <tr class="hover:bg-gray-50">
-                    <td class="border px-3 py-2"><?= $r['leave_request_id'] ?></td>
-                    <td class="border px-3 py-2"><?= htmlspecialchars($r['leave_name']) ?></td>
-                    <td class="border px-3 py-2"><?= $r['start_date'] ?> → <?= $r['end_date'] ?></td>
-                    <td class="border px-3 py-2 text-center"><?= $r['total_days'] ?></td>
-                    <td class="border px-3 py-2"><?= $r['status'] ?></td>
-                    <td class="border px-3 py-2">
-                        <?= $r['approver_first'] ? htmlspecialchars($r['approver_first'].' '.$r['approver_last']) : '-' ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
+  <!-- Desktop Table -->
+  <div class="hidden md:block bg-white rounded shadow overflow-hidden">
+    <table class="w-full border-collapse">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="border px-3 py-2 text-left">#</th>
+          <th class="border px-3 py-2 text-left">Leave Type</th>
+          <th class="border px-3 py-2 text-left">Dates</th>
+          <th class="border px-3 py-2 text-center">Days</th>
+          <th class="border px-3 py-2 text-left">Status</th>
+          <th class="border px-3 py-2 text-left">Approved By</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($requests as $r): ?>
+          <tr class="hover:bg-gray-50">
+            <td class="border px-3 py-2"><?= $r['leave_request_id'] ?></td>
+            <td class="border px-3 py-2"><?= htmlspecialchars($r['leave_name']) ?></td>
+            <td class="border px-3 py-2"><?= $r['start_date'] ?> → <?= $r['end_date'] ?></td>
+            <td class="border px-3 py-2 text-center"><?= $r['total_days'] ?></td>
+            <td class="border px-3 py-2"><?= $r['status'] ?></td>
+            <td class="border px-3 py-2"><?= $r['approver_first'] ? htmlspecialchars($r['approver_first'].' '.$r['approver_last']) : '-' ?></td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
     </table>
-</div>
+  </div>
 
+  <!-- Mobile Cards -->
+  <div class="md:hidden space-y-4">
+    <?php foreach ($requests as $r): ?>
+      <div class="bg-white rounded shadow p-4 border">
+        <div class="flex justify-between mb-2">
+          <span class="font-semibold text-gray-700">#</span>
+          <span><?= $r['leave_request_id'] ?></span>
+        </div>
+        <div class="flex justify-between mb-2">
+          <span class="font-semibold text-gray-700">Leave Type</span>
+          <span><?= htmlspecialchars($r['leave_name']) ?></span>
+        </div>
+        <div class="flex justify-between mb-2">
+          <span class="font-semibold text-gray-700">Dates</span>
+          <span><?= $r['start_date'] ?> → <?= $r['end_date'] ?></span>
+        </div>
+        <div class="flex justify-between mb-2">
+          <span class="font-semibold text-gray-700">Days</span>
+          <span><?= $r['total_days'] ?></span>
+        </div>
+        <div class="flex justify-between mb-2">
+          <span class="font-semibold text-gray-700">Status</span>
+          <span><?= $r['status'] ?></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="font-semibold text-gray-700">Approved By</span>
+          <span><?= $r['approver_first'] ? htmlspecialchars($r['approver_first'].' '.$r['approver_last']) : '-' ?></span>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</div>
 
 
 

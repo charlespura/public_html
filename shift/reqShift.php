@@ -10,8 +10,6 @@ include __DIR__ . '/../dbconnection/dbEmployee.php';
 $empConn = $conn; // Employee DB
 include __DIR__ . '/../dbconnection/mainDB.php';
 $shiftConn = $conn; // Shift DB
-
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $request_id   = bin2hex(random_bytes(16));
     $employee_id  = $_POST['employee_id'] ?? '';
@@ -34,15 +32,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             die("Invalid request type selected.");
         }
 
-        // Lookup status_id for "pending"
-        $statusStmt = $shiftConn->prepare("SELECT status_id FROM request_statuses WHERE status_name = 'pending'");
-        $statusStmt->execute();
-        $statusResult = $statusStmt->get_result();
-        $statusRow = $statusResult->fetch_assoc();
-        $status_id = $statusRow['status_id'] ?? null;
+        // Determine status: Auto-approve if Admin/Manager
+        session_start();
+        $roles = $_SESSION['roles'] ?? 'Employee';
+        $loggedInUserId = $_SESSION['employee_id'] ?? null;
 
-        if (!$status_id) {
-            die("Pending status not found.");
+        if (in_array($roles, ['Admin','Manager'])) {
+            // Auto-approved
+            $statusStmt = $shiftConn->prepare("SELECT status_id FROM request_statuses WHERE status_name = 'approved'");
+            $statusStmt->execute();
+            $statusRow = $statusStmt->get_result()->fetch_assoc();
+            $status_id = $statusRow['status_id'];
+            $approved_by = $loggedInUserId; // keep track of approver
+        } else {
+            // Default pending
+            $statusStmt = $shiftConn->prepare("SELECT status_id FROM request_statuses WHERE status_name = 'pending'");
+            $statusStmt->execute();
+            $statusRow = $statusStmt->get_result()->fetch_assoc();
+            $status_id = $statusRow['status_id'];
+            $approved_by = null;
         }
 
         // Force shift_id to NULL if request type is day_off or shift not selected
@@ -50,33 +58,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $shift_id = null;
         }
 
-        // Insert request
-        $stmt = $shiftConn->prepare("
-            INSERT INTO employee_shift_requests 
-            (request_id, employee_id, shift_id, request_date, request_type_id, status_id, notes, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-        ");
+      $approved_by = in_array($roles, ['Admin','Manager']) ? $loggedInUserId : null;
 
-        $stmt->bind_param(
-            "sssssss",
-            $request_id,
-            $employee_id,
-            $shift_id,
-            $request_date,
-            $request_type_id,
-            $status_id,
-            $notes
-        );
+$stmt = $shiftConn->prepare("
+    INSERT INTO employee_shift_requests 
+    (request_id, employee_id, shift_id, request_date, request_type_id, status_id, approver_id, approved_at, notes, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+");
+
+$approved_at = $approved_by ? date('Y-m-d H:i:s') : null;
+
+$stmt->bind_param(
+    "sssssssss",
+    $request_id,
+    $employee_id,
+    $shift_id,
+    $request_date,
+    $request_type_id,
+    $status_id,
+    $approved_by,
+    $approved_at,
+    $notes
+);
 
         if ($stmt->execute()) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
+            $_SESSION['flash_message'] = in_array($roles, ['Admin','Manager']) 
+                ? "✅ Shift request submitted and auto-approved!" 
+                : "Shift request submitted successfully!";
+            header("Location: " . $_SERVER['PHP_SELF']);
             exit();
         } else {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?error=" . urlencode($stmt->error));
+            $_SESSION['flash_message'] = "Error: " . $stmt->error;
+            header("Location: " . $_SERVER['PHP_SELF']);
             exit();
         }
     }
 }
+
 
 // Fetch employees for dropdown
 $employees = $empConn->query("
@@ -224,11 +242,11 @@ if (in_array($roles, ['Admin', 'Manager'])):
 <!-- Messages -->
 <?php if (isset($_GET['success'])): ?>
 <div class="bg-green-100 text-green-700 p-3 mb-4 rounded">
-    ✅ Request submitted successfully!
+    Request submitted successfully!
 </div>
 <?php elseif (isset($_GET['error'])): ?>
 <div class="bg-red-100 text-red-700 p-3 mb-4 rounded">
-    ❌ Error: <?php echo htmlspecialchars($_GET['error']); ?>
+     Error: <?php echo htmlspecialchars($_GET['error']); ?>
 </div>
 <?php endif; ?>
 
@@ -515,10 +533,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift'])) {
                 );
 
                 if ($stmt->execute()) {
-                    $message = "✅ Shift request submitted!";
+                    $message = "Shift request submitted!";
                     $messageType = "success";
                 } else {
-                    $message = "❌ Error: " . $stmt->error;
+                    $message = " Error: " . $stmt->error;
                     $messageType = "error";
                 }
                 $stmt->close();

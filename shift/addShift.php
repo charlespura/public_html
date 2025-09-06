@@ -77,12 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param("ssssssi", $shift_id, $shift_code, $name, $start_time, $end_time, $break_minutes, $is_overnight);
             if ($stmt->execute()) {
-                echo '<div class="bg-green-100 text-green-700 p-3 mb-4 rounded">✅ Shift added successfully!</div>';
+                echo '<div class="bg-green-100 text-green-700 p-3 mb-4 rounded">Shift added successfully!</div>';
             } else {
-                echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded">❌ Error: ' . htmlspecialchars($stmt->error) . '</div>';
+                echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded"> Error: ' . htmlspecialchars($stmt->error) . '</div>';
             }
         } else {
-            echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded">⚠️ Please fill in all required fields.</div>';
+            echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded"> Please fill in all required fields.</div>';
         }
     }
 
@@ -100,9 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $shiftConn->prepare("UPDATE shifts SET shift_code=?, name=?, start_time=?, end_time=?, break_minutes=?, is_overnight=? WHERE shift_id=?");
             $stmt->bind_param("ssssiis", $shift_code, $name, $start_time, $end_time, $break_minutes, $is_overnight, $shift_id);
             if ($stmt->execute()) {
-                echo '<div class="bg-green-100 text-green-700 p-3 mb-4 rounded">✅ Shift updated successfully!</div>';
+                echo '<div class="bg-green-100 text-green-700 p-3 mb-4 rounded">Shift updated successfully!</div>';
             } else {
-                echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded">❌ Error: ' . htmlspecialchars($stmt->error) . '</div>';
+                echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded"> Error: ' . htmlspecialchars($stmt->error) . '</div>';
             }
         }
     }
@@ -114,9 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $shiftConn->prepare("DELETE FROM shifts WHERE shift_id=?");
             $stmt->bind_param("s", $shift_id);
             if ($stmt->execute()) {
-                echo '<div class="bg-green-100 text-green-700 p-3 mb-4 rounded">✅ Shift deleted successfully!</div>';
+                echo '<div class="bg-green-100 text-green-700 p-3 mb-4 rounded">Shift deleted successfully!</div>';
             } else {
-                echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded">❌ Error: ' . htmlspecialchars($stmt->error) . '</div>';
+                echo '<div class="bg-red-100 text-red-700 p-3 mb-4 rounded"> Error: ' . htmlspecialchars($stmt->error) . '</div>';
             }
         }
     }

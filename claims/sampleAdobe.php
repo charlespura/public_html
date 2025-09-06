@@ -377,7 +377,7 @@ function adobe_protect_pdf($pdfPath, $outPath, $password) {
         const res = await fetch('?action=' + action, { method: 'POST', body });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Something went wrong');
-        statusEl.innerHTML = `✅ ${data.message || 'Done.'} ` + (data.download ? `• <a class="text-indigo-700 underline" href="${data.download}" target="_blank">Download</a>` : '');
+        statusEl.innerHTML = `${data.message || 'Done.'} ` + (data.download ? `• <a class="text-indigo-700 underline" href="${data.download}" target="_blank">Download</a>` : '');
       } catch (e) {
         statusEl.textContent = '❌ ' + e.message;
       }

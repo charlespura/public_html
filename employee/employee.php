@@ -342,7 +342,7 @@ $conn->close();
     updateSelectionUI();
   }
 
-  // ✅ Update record count & UI
+  // Update record count & UI
   function updateSelectionUI() {
     const selected = document.querySelectorAll(".rowCheckbox:checked").length;
     const countSpan = document.getElementById("recordCount");
